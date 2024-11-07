@@ -1,0 +1,8 @@
+__pycache__
+.vscode
+.idea
+allure-report
+allure-results*
+*.xlsx
+report.html
+assets
