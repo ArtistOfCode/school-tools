@@ -23,15 +23,22 @@ class ScoreAnalyseService:
         school_workbook: Workbook = Workbook()
         school_workbook.remove(school_workbook['Sheet'])
         for file_path in self.file_paths:
+            title = f'{os.path.basename(file_path)}'.replace('.xlsx', '')
             workbook: Workbook = load_workbook(file_path, True, False, True)
             school_score = self.grade_analyse(workbook)
-            grade_sheet: Worksheet = school_workbook.create_sheet(
-                title=f'{os.path.basename(file_path)}'.replace('.xlsx', ''))
+            grade_sheet: Worksheet = school_workbook.create_sheet(title)
+
             self.write_class(grade_sheet, school_score, '语文', lambda s: s.chinese)
             self.write_class(grade_sheet, school_score, '数学', lambda s: s.math)
             self.write_class(grade_sheet, school_score, '英语', lambda s: s.english)
             self.write_class(grade_sheet, school_score, '两科', lambda s: s.two)
             self.write_class(grade_sheet, school_score, '三科', lambda s: s.three)
+
+            self.write_care_stu(grade_sheet, school_score, '语文', lambda s: s.chinese)
+            self.write_care_stu(grade_sheet, school_score, '数学', lambda s: s.math, 1)
+            self.write_care_stu(grade_sheet, school_score, '英语', lambda s: s.english, 2)
+            self.write_care_stu(grade_sheet, school_score, '两科', lambda s: s.two, 3)
+            self.write_care_stu(grade_sheet, school_score, '三科', lambda s: s.three, 4)
             workbook.close()
         school_workbook.save(self.result_path)
 
@@ -71,3 +78,25 @@ class ScoreAnalyseService:
                 [class_score.name, class_score.total_count, subject.average_score, subject.pass_count,
                  subject.pass_rate, subject.top_count, subject.top_rate, subject.care_score])
         grade_sheet.append([])
+
+    # 导出关爱学生
+    @staticmethod
+    def write_care_stu(grade_sheet: Worksheet, school_score: List[ClassScore], subject_name: str, func,
+                       offset: int = 0):
+        row_index, column_index = 1, (offset * 4) + 11
+        class_col, name_col, score_col = column_index, column_index + 1, column_index + 2
+
+        for class_score in school_score:
+            subject = func(class_score)
+            if len(subject.care_stu) == 0 or class_score.name == '校平': continue
+
+            grade_sheet.cell(row_index, class_col).value = f'班级（{len(subject.care_stu)}）'
+            grade_sheet.cell(row_index, name_col).value = subject_name
+            grade_sheet.cell(row_index, score_col).value = '分数'
+
+            for stu in subject.care_stu:
+                row_index += 1
+                grade_sheet.cell(row_index, class_col).value = class_score.name
+                grade_sheet.cell(row_index, name_col).value = stu.name
+                grade_sheet.cell(row_index, score_col).value = func(stu)
+            row_index += 2
