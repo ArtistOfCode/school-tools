@@ -4,9 +4,13 @@ from typing import List
 
 from model.student_model import Student
 
+# 及格分数
 PASS_SCORE = Decimal('60')
+# 单科特优分数
 SINGLE_TOP_SCORE = Decimal('92.5')
+# 两科特优分数
 TWO_TOP_SCORE = Decimal('185')
+# 关爱人数比例
 CARE_RATE = 0.2
 
 
@@ -55,6 +59,7 @@ class ClassScore:
         self.two = SubjectScore()
         self.three = SubjectScore()
 
+    # 计算校平时添加班级
     def add_class(self, class_score: 'ClassScore'):
         self.total_count += class_score.total_count
         self.count_class(self.chinese, class_score.chinese)
@@ -63,6 +68,7 @@ class ClassScore:
         self.count_class(self.two, class_score.two)
         self.count_class(self.three, class_score.three)
 
+    # 计算校平累计班级数据
     @staticmethod
     def count_class(subject: SubjectScore, class_subject: SubjectScore):
         subject.total_score += class_subject.total_score
@@ -71,6 +77,7 @@ class ClassScore:
         subject.care_count += class_subject.care_count
         subject.total_stu.extend(class_subject.total_stu)
 
+    # 计算班级时添加学生
     def add_student(self, stu: Student):
         self.count_single_subject(self.chinese, stu.chinese)
         self.chinese.total_stu.append(stu)
@@ -86,23 +93,27 @@ class ClassScore:
 
         self.count_three_subject(self.three, stu)
 
+    # 计算班级时累计学生数据（单科）
     def count_single_subject(self, subject: SubjectScore, score: Decimal):
         subject.total_score += score
         if score >= PASS_SCORE: subject.pass_count += 1
         if score >= SINGLE_TOP_SCORE: subject.top_count += 1
         subject.care_count = int(self.total_count * CARE_RATE)
 
+    # 计算班级时累计学生数据（双科）
     def count_two_subject(self, subject: SubjectScore, stu: Student):
         subject.total_score += stu.two
         if stu.chinese >= PASS_SCORE and stu.math >= PASS_SCORE: subject.pass_count += 1
         if stu.two >= TWO_TOP_SCORE: subject.top_count += 1
         subject.care_count = int(self.total_count * CARE_RATE)
 
+    # 计算班级时累计学生数据（三科）
     def count_three_subject(self, subject: SubjectScore, stu: Student):
         subject.total_score += stu.three
         if stu.chinese >= PASS_SCORE and stu.math >= PASS_SCORE and stu.english >= PASS_SCORE: subject.pass_count += 1
         subject.care_count = int(self.total_count * CARE_RATE)
 
+    # 计算科目统计指标
     def calc_subject(self, subject: SubjectScore, func, factor: Decimal = Decimal('1')):
         total_count = Decimal(self.total_count)
         subject.average_score = self.divide(subject.total_score / factor, total_count)
@@ -114,6 +125,7 @@ class ClassScore:
         subject.care_stu.reverse()
         subject.care_score = self.average([func(s) for s in subject.care_stu])
 
+    # 计算班级所有科目的统计指标（包括班级和校平）
     def calc_class(self):
         self.calc_subject(self.chinese, lambda s: s.chinese)
         self.calc_subject(self.math, lambda s: s.math)
