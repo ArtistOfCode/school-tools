@@ -7,7 +7,7 @@ from openpyxl.cell.cell import TYPE_NUMERIC
 
 
 class Student:
-    # 年级 班级 学生姓名 语文 数学 英语
+    # 年级 班级 学生姓名 语文 数学 英语 总评
     grade_name: str
     class_name: str
     name: str
@@ -15,7 +15,6 @@ class Student:
     math: Decimal
     english: Decimal
     two: Decimal
-    three: Decimal
 
     def __init__(self, row: Tuple[Cell, ...]):
         self.grade_name = row[0].value
@@ -26,10 +25,8 @@ class Student:
         self.two = self.chinese + self.math
         if len(row) == 5 or row[5] is None or row[5].value is None:
             self.english = Decimal('0')
-            self.three = Decimal('0')
         else:
             self.english = Decimal(str(row[5].value))
-            self.three = self.two + self.english
 
 
 def is_valid_stu(row: Tuple[Cell, ...]):

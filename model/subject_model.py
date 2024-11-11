@@ -15,4 +15,4 @@ class SubjectInfo:
         self.factor = factor
 
     def is_high_subject(self):
-        return self.code == 'english' or self.code == 'three'
+        return self.code == 'english'

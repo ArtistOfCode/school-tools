@@ -43,8 +43,7 @@ subjects = [
     SubjectInfo('chinese', '语文', lambda s: s.chinese),
     SubjectInfo('math', '数学', lambda s: s.math),
     SubjectInfo('english', '英语', lambda s: s.english),
-    SubjectInfo('two', '两科', lambda s: s.two, Decimal('2')),
-    SubjectInfo('three', '三科', lambda s: s.three, Decimal(3)),
+    SubjectInfo('two', '总评', lambda s: s.two, Decimal('2')),
 ]
 
 

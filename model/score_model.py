@@ -43,14 +43,13 @@ class SubjectScore:
 
 
 class ClassScore:
-    # 班级名称 总人数 语文成绩 数学成绩 英语成绩 两科成绩 三科成绩
+    # 班级名称 总人数 语文成绩 数学成绩 英语成绩 总评成绩
     name: str
     total_count: int
     chinese: SubjectScore
     math: SubjectScore
     english: SubjectScore
     two: SubjectScore
-    three: SubjectScore
 
     def __init__(self, name: str):
         self.name = name
@@ -59,7 +58,6 @@ class ClassScore:
         self.math = SubjectScore()
         self.english = SubjectScore()
         self.two = SubjectScore()
-        self.three = SubjectScore()
 
     # 计算校平时添加班级
     def add_class(self, class_score: 'ClassScore'):
@@ -90,9 +88,6 @@ class ClassScore:
         self.count_two_subject(self.two, stu)
         self.two.total_stu.append(stu)
 
-        if not is_low_grade(stu.grade_name):
-            self.count_three_subject(self.three, stu)
-
     # 计算班级时累计学生数据（单科）
     def count_single_subject(self, subject: SubjectScore, score: Decimal):
         subject.total_score += score
@@ -100,17 +95,14 @@ class ClassScore:
         if score >= SINGLE_TOP_SCORE: subject.top_count += 1
         subject.care_count = int(self.total_count * CARE_RATE)
 
-    # 计算班级时累计学生数据（双科）
+    # 计算班级时累计学生数据（总评）
     def count_two_subject(self, subject: SubjectScore, stu: Student):
         subject.total_score += stu.two
-        if stu.chinese >= PASS_SCORE and stu.math >= PASS_SCORE: subject.pass_count += 1
+        if is_low_grade(stu.grade_name):
+            if stu.chinese >= PASS_SCORE and stu.math >= PASS_SCORE: subject.pass_count += 1
+        else:
+            if stu.chinese >= PASS_SCORE and stu.math >= PASS_SCORE and stu.english >= PASS_SCORE: subject.pass_count += 1
         if stu.two >= TWO_TOP_SCORE: subject.top_count += 1
-        subject.care_count = int(self.total_count * CARE_RATE)
-
-    # 计算班级时累计学生数据（三科）
-    def count_three_subject(self, subject: SubjectScore, stu: Student):
-        subject.total_score += stu.three
-        if stu.chinese >= PASS_SCORE and stu.math >= PASS_SCORE and stu.english >= PASS_SCORE: subject.pass_count += 1
         subject.care_count = int(self.total_count * CARE_RATE)
 
     # 计算科目统计指标

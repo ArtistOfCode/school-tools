@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import List
 
@@ -40,7 +41,9 @@ class ScoreAnalyseService:
                 self.write_care_stu(grade_sheet, school_score, subject, CellIndex(), column)
 
             workbook.close()
+            logging.info(f'{title}分析完成！')
         school_workbook.save(self.result_path)
+        logging.info('分析结果保存完成！')
 
     # 年级分析
     def grade_analyse(self, workbook: Workbook):
@@ -71,8 +74,9 @@ class ScoreAnalyseService:
     # 保存结果
     @staticmethod
     def write_class(grade_sheet: Worksheet, school_score: List[ClassScore], subject_info: SubjectInfo, row: CellIndex):
-        headers = ['班级', '总人数', '平均分', '及格人数', '及格率', '特优人数', '特优率', '关爱平均分', '总评',
-                   '与校平差', '排名']
+        total_name = '三科' if not is_low_grade(grade_sheet.title) and subject_info.code == 'two' else ''
+        headers = ['班级', '总人数', '平均分', f'{total_name}及格人数', f'{total_name}及格率', '特优人数', '特优率',
+                   '关爱平均分', '总评', '与校平差', '排名']
         set_title_cell(grade_sheet.cell(row.value, 1), subject_info.name)
         row.next()
 
@@ -80,47 +84,36 @@ class ScoreAnalyseService:
         row.next()
 
         first_row = row.value
-        top_cell, care_cell = None, None
+        c3 = None
         for class_score in school_score:
             subject = subject_info.func(class_score)
             row_index = row.value
             set_cell(grade_sheet.cell(row_index, 1), class_score.name)
             set_cell(grade_sheet.cell(row_index, 2), class_score.total_count)
-            average_cell = set_float_cell(grade_sheet.cell(row_index, 3), subject.average_score)
+            c1 = set_float_cell(grade_sheet.cell(row_index, 3), subject.average_score)
             set_cell(grade_sheet.cell(row_index, 4), subject.pass_count)
-            pass_cell = set_float_cell(grade_sheet.cell(row_index, 5), subject.pass_rate)
-            if not subject_info.is_high_subject():
+            c2 = set_float_cell(grade_sheet.cell(row_index, 5), subject.pass_rate)
+            if subject_info.code != 'english':
                 set_cell(grade_sheet.cell(row_index, 6), subject.top_count)
-                top_cell = set_float_cell(grade_sheet.cell(row_index, 7), subject.top_rate)
-            if subject_info.code != 'three':
-                care_cell = set_float_cell(grade_sheet.cell(row_index, 8), subject.care_score)
+                c3 = set_float_cell(grade_sheet.cell(row_index, 7), subject.top_rate)
+            c4 = set_float_cell(grade_sheet.cell(row_index, 8), subject.care_score)
 
             # 计算总评
-            total_cell = None
             if subject_info.code == 'english':
-                total_cell = set_float_cell(grade_sheet.cell(row_index, 9),
-                                            f'={average_cell.coordinate}*0.4+{pass_cell.coordinate}*0.4+{care_cell.coordinate}*0.2')
-            elif subject_info.code == 'two' and not is_low_grade(grade_sheet.title):
-                three_pass_cell = grade_sheet.cell(row_index + len(school_score) + 3, pass_cell.column)
-                total_cell = set_float_cell(grade_sheet.cell(row_index, 9),
-                                            f'={average_cell.coordinate}*0.4+{three_pass_cell.coordinate}*0.3+{top_cell.coordinate}*0.2+{care_cell.coordinate}*0.1')
-            elif subject_info.code == 'three':
-                pass
+                c5 = set_float_cell(grade_sheet.cell(row_index, 9),
+                                    f'={c1.coordinate}*0.4+{c2.coordinate}*0.4+{c4.coordinate}*0.2')
             else:
-                total_cell = set_float_cell(grade_sheet.cell(row_index, 9),
-                                            f'={average_cell.coordinate}*0.4+{pass_cell.coordinate}*0.3+{top_cell.coordinate}*0.2+{care_cell.coordinate}*0.1')
+                c5 = set_float_cell(grade_sheet.cell(row_index, 9),
+                                    f'={c1.coordinate}*0.4+{c2.coordinate}*0.3+{c3.coordinate}*0.2+{c4.coordinate}*0.1')
 
-            if total_cell is not None and class_score.name != '校平':
+            if c5 is not None and class_score.name != '校平':
                 # 计算与校平差
-                school_cell = grade_sheet.cell(first_row + len(school_score) - 1, 9)
-                set_float_cell(grade_sheet.cell(row_index, 10), f'={total_cell.coordinate}-{school_cell.coordinate}')
-
+                c6 = grade_sheet.cell(first_row + len(school_score) - 1, 9)
+                set_float_cell(grade_sheet.cell(row_index, 10), f'={c5.coordinate}-{c6.coordinate}')
                 # 计算排名
-                first_total = grade_sheet.cell(first_row, 9)
-                last_total = grade_sheet.cell(first_row + len(school_score) - 2, 9)
-                set_cell(grade_sheet.cell(row_index, 11),
-                         f'=RANK({total_cell.coordinate},{first_total.coordinate}:{last_total.coordinate})')
-
+                c7 = grade_sheet.cell(first_row, 9)
+                c8 = grade_sheet.cell(first_row + len(school_score) - 2, 9)
+                set_cell(grade_sheet.cell(row_index, 11), f'=RANK({c5.coordinate},{c7.coordinate}:{c8.coordinate})')
             row.next()
         row.next()
 
