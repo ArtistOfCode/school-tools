@@ -3,6 +3,8 @@ from decimal import Decimal
 from typing import List
 
 from model.student_model import Student
+from model.subject_model import SubjectInfo
+from service.excel_styles import is_low_grade, subjects
 
 # 及格分数
 PASS_SCORE = Decimal('60')
@@ -85,13 +87,15 @@ class ClassScore:
         self.count_single_subject(self.math, stu.math)
         self.math.total_stu.append(stu)
 
-        self.count_single_subject(self.english, stu.english)
-        self.english.total_stu.append(stu)
+        if not is_low_grade(stu.grade_name):
+            self.count_single_subject(self.english, stu.english)
+            self.english.total_stu.append(stu)
 
         self.count_two_subject(self.two, stu)
         self.two.total_stu.append(stu)
 
-        self.count_three_subject(self.three, stu)
+        if not is_low_grade(stu.grade_name):
+            self.count_three_subject(self.three, stu)
 
     # 计算班级时累计学生数据（单科）
     def count_single_subject(self, subject: SubjectScore, score: Decimal):
@@ -114,24 +118,23 @@ class ClassScore:
         subject.care_count = int(self.total_count * CARE_RATE)
 
     # 计算科目统计指标
-    def calc_subject(self, subject: SubjectScore, func, factor: Decimal = Decimal('1')):
+    def calc_subject(self, subject_info: SubjectInfo):
+        subject = subject_info.func(self)
         total_count = Decimal(self.total_count)
-        subject.average_score = self.divide(subject.total_score / factor, total_count)
+
+        subject.average_score = self.divide(subject.total_score / subject_info.factor, total_count)
         subject.pass_rate = self.divide(Decimal(subject.pass_count) * 100, total_count)
         subject.top_rate = self.divide(Decimal(subject.top_count) * 100, total_count)
 
-        subject.total_stu.sort(key=func)
-        subject.care_stu = subject.total_stu[:subject.care_count]
-        subject.care_stu.reverse()
-        subject.care_score = self.average([func(s) for s in subject.care_stu])
+        if len(subject.total_stu) > 0:
+            subject.total_stu.sort(key=subject_info.func)
+            subject.care_stu = subject.total_stu[:subject.care_count]
+            subject.care_stu.reverse()
+            subject.care_score = self.average([subject_info.func(s) for s in subject.care_stu])
 
     # 计算班级所有科目的统计指标（包括班级和校平）
     def calc_class(self):
-        self.calc_subject(self.chinese, lambda s: s.chinese)
-        self.calc_subject(self.math, lambda s: s.math)
-        self.calc_subject(self.english, lambda s: s.english)
-        self.calc_subject(self.two, lambda s: s.two, Decimal('2'))
-        self.calc_subject(self.three, lambda s: s.three, Decimal('3'))
+        for subject in subjects: self.calc_subject(subject)
 
     @staticmethod
     def divide(n1: Decimal, n2: Decimal):

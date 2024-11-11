@@ -5,17 +5,9 @@ from openpyxl import load_workbook
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from model.score_model import ClassScore
+from model.score_model import ClassScore, SubjectInfo
 from model.student_model import is_valid_stu, Student
-from service.excel_styles import set_cell, set_title_cell
-
-subjects = [
-    {'name': '语文', 'func': lambda s: s.chinese},
-    {'name': '数学', 'func': lambda s: s.math},
-    {'name': '英语', 'func': lambda s: s.english},
-    {'name': '两科', 'func': lambda s: s.two},
-    {'name': '三科', 'func': lambda s: s.three},
-]
+from service.excel_styles import set_cell, set_title_cell, set_float_cell, Row, is_low_grade, subjects
 
 
 class ScoreAnalyseService:
@@ -36,10 +28,12 @@ class ScoreAnalyseService:
             workbook: Workbook = load_workbook(file_path, True, False, True)
             school_score = self.grade_analyse(workbook)
             grade_sheet: Worksheet = school_workbook.create_sheet(title)
-            for index, subject in enumerate(subjects):
-                self.write_class(grade_sheet, school_score, subject['name'], subject['func'], index)
-            for index, subject in enumerate(subjects):
-                self.write_care_stu(grade_sheet, school_score, subject['name'], subject['func'], index)
+            row = Row()
+            for subject in subjects:
+                if is_low_grade(title) and subject.is_high_subject(): continue
+                self.write_class(grade_sheet, school_score, subject, row)
+            # for index, subject in enumerate(subjects):
+            #     self.write_care_stu(grade_sheet, school_score, subject['name'], subject['func'], index)
             workbook.close()
         school_workbook.save(self.result_path)
 
@@ -70,29 +64,27 @@ class ScoreAnalyseService:
 
     # 保存结果
     @staticmethod
-    def write_class(grade_sheet: Worksheet, school_score: List[ClassScore], subject_name: str, func, offset: int = 0):
-        row_index = offset * (len(school_score) + 3) + 1
+    def write_class(grade_sheet: Worksheet, school_score: List[ClassScore], subject_info: SubjectInfo, row: Row):
         headers = ['班级', '总人数', '平均分', '及格人数', '及格率', '特优人数', '特优率', '关爱平均分']
+        set_title_cell(grade_sheet.cell(row.value, 1), subject_info.name)
+        row.next()
 
-        set_title_cell(grade_sheet.cell(row_index, 1), subject_name)
-        row_index += 1
-
-        for idx, header in enumerate(headers):
-            set_title_cell(grade_sheet.cell(row_index, idx + 1), header)
-        row_index += 1
+        for idx, header in enumerate(headers): set_title_cell(grade_sheet.cell(row.value, idx + 1), header)
+        row.next()
 
         for class_score in school_score:
-            subject = func(class_score)
+            subject = subject_info.func(class_score)
+            row_index = row.value
             set_cell(grade_sheet.cell(row_index, 1), class_score.name)
             set_cell(grade_sheet.cell(row_index, 2), class_score.total_count)
-            set_cell(grade_sheet.cell(row_index, 3), subject.average_score)
+            set_float_cell(grade_sheet.cell(row_index, 3), subject.average_score)
             set_cell(grade_sheet.cell(row_index, 4), subject.pass_count)
-            set_cell(grade_sheet.cell(row_index, 5), subject.pass_rate)
+            set_float_cell(grade_sheet.cell(row_index, 5), subject.pass_rate)
             set_cell(grade_sheet.cell(row_index, 6), subject.top_count)
-            set_cell(grade_sheet.cell(row_index, 7), subject.top_rate)
-            set_cell(grade_sheet.cell(row_index, 8), subject.care_score)
-            row_index += 1
-        grade_sheet.append([])
+            set_float_cell(grade_sheet.cell(row_index, 7), subject.top_rate)
+            set_float_cell(grade_sheet.cell(row_index, 8), subject.care_score)
+            row.next()
+        row.next()
 
     # 导出关爱学生
     @staticmethod
