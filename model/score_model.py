@@ -64,11 +64,7 @@ class ClassScore:
     # 计算校平时添加班级
     def add_class(self, class_score: 'ClassScore'):
         self.total_count += class_score.total_count
-        self.count_class(self.chinese, class_score.chinese)
-        self.count_class(self.math, class_score.math)
-        self.count_class(self.english, class_score.english)
-        self.count_class(self.two, class_score.two)
-        self.count_class(self.three, class_score.three)
+        for subject in subjects: self.count_class(subject.func(self), subject.func(class_score))
 
     # 计算校平累计班级数据
     @staticmethod

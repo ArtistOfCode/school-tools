@@ -11,31 +11,32 @@ thin_side = Side(style='thin', color='000000')
 thin_border = Border(thin_side, thin_side, thin_side, thin_side)
 
 
-def set_title_cell(cell: Cell, value):
-    set_cell(cell, value, bold, center)
+def set_title_cell(cell: Cell, value) -> Cell:
+    return set_cell(cell, value, bold, center)
 
 
-def set_float_cell(cell: Cell, value):
+def set_float_cell(cell: Cell, value) -> Cell:
     cell.number_format = '0.00'
-    set_cell(cell, value)
+    return set_cell(cell, value)
 
 
 def set_cell(cell: Cell, value, font: Font = None, align: Alignment = None, fill: PatternFill = None,
-             border: Border = thin_border):
+             border: Border = thin_border) -> Cell:
     cell.value = value
     if font is not None: cell.font = font
     if align is not None: cell.alignment = align
     if fill is not None: cell.fill = fill
     if border is not None: cell.border = border
+    return cell
 
 
-class Row:
+class CellIndex:
     value: int
 
     def __init__(self, row=1): self.value = row
 
-    def next(self):
-        self.value += 1
+    def next(self, step=1):
+        self.value += step
 
 
 subjects = [
