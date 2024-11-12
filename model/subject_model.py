@@ -14,5 +14,8 @@ class SubjectInfo:
         self.func = func
         self.factor = factor
 
+    def is_total_subject(self):
+        return self.code == 'two'
+
     def is_high_subject(self):
         return self.code == 'english'
