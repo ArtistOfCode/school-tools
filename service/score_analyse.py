@@ -41,7 +41,7 @@ class ScoreAnalyseService:
             school_score = self.grade_analyse(workbook)
             grade_sheet: Worksheet = school_workbook.create_sheet(title)
 
-            grade_layout = school_ppt.slide_layouts[0]
+            grade_layout = school_ppt.slide_layouts[1]
             grade_slide = school_ppt.slides.add_slide(grade_layout)
             grade_slide.shapes.title.text = f'{title}成绩分析'
 
@@ -167,8 +167,8 @@ class ScoreAnalyseService:
         if is_low_grade(title) and subject_info.is_high_subject(): return
 
         # 添加幻灯片
-        subject_layout = school_ppt.slide_layouts[1]
-        class_layout = school_ppt.slide_layouts[2]
+        subject_layout = school_ppt.slide_layouts[2]
+        class_layout = school_ppt.slide_layouts[3]
         subject_slide = school_ppt.slides.add_slide(subject_layout)
         subject_slide.shapes.title.text = f'{subject_info.name}情况分析'
         class_slide = school_ppt.slides.add_slide(class_layout)
@@ -192,7 +192,7 @@ class ScoreAnalyseService:
         max_row = len(school_score) + 1
         max_column = len(headers)
         width = Inches(1.2)
-        height = Inches(0.8)
+        height = Inches(0.5)
         left = Inches((ppt_width - len(headers) * 1.2) / 2)
         top = Inches(1.5)
         table = class_slide.shapes.add_table(max_row, max_column, left, top, width, height).table
@@ -204,18 +204,15 @@ class ScoreAnalyseService:
         row = CellIndex()
 
         # 计算总评
+        total_score = []
         for class_score in school_score:
             subject: SubjectScore = subject_info.func(class_score)
-            if subject_info.is_high_subject():
-                subject.total = subject.average_score * Decimal('0.4') + subject.pass_rate * Decimal(
-                    '0.4') + subject.care_score * Decimal('0.2')
-            else:
-                subject.total = subject.average_score * Decimal('0.4') + subject.pass_rate * Decimal(
-                    '0.3') + subject.top_rate * Decimal('0.2') + subject.care_score * Decimal('0.1')
+            total_score.append(subject.calc_total(subject_info.is_high_subject()))
 
         # 计算排名
-        school_total = subject_info.func(school_score[len(school_score) - 1]).total
-        sort_total = [subject_info.func(class_score).total for class_score in school_score][:len(school_score) - 1]
+        school_total_idx = len(total_score) - 1
+        school_total = total_score[school_total_idx]
+        sort_total = total_score[:school_total_idx]
         sort_total.sort(reverse=True)
 
         for idx, class_score in enumerate(school_score):
@@ -223,15 +220,21 @@ class ScoreAnalyseService:
             color = None
             subject: SubjectScore = subject_info.func(class_score)
             row_idx = row.value
+            table.rows[row_idx].height = height
+
+            class_total = total_score[idx]
+            class_diff = class_total - school_total
+
             if subject_info.is_high_subject():
                 set_center_cell(table.cell(row_idx, 0), class_score.name, color)
                 set_center_cell(table.cell(row_idx, 1), self.to_string(subject.average_score), color)
                 set_center_cell(table.cell(row_idx, 2), self.to_string(subject.pass_rate), color)
                 set_center_cell(table.cell(row_idx, 3), self.to_string(subject.care_score), color)
-                set_center_cell(table.cell(row_idx, 4), self.to_string(subject.total), color)
+                set_center_cell(table.cell(row_idx, 4), self.to_string(class_total), color)
                 if class_score.name != '校平':
-                    set_center_cell(table.cell(row_idx, 5), self.to_string(subject.total - school_total), color)
-                    set_center_cell(table.cell(row_idx, 6), str(sort_total.index(subject.total) + 1), color)
+                    class_no = sort_total.index(class_total) + 1
+                    set_center_cell(table.cell(row_idx, 5), self.to_string(class_diff), color)
+                    set_center_cell(table.cell(row_idx, 6), str(class_no), color)
                     set_center_cell(table.cell(row_idx, 7), f'{teacher_name}{idx + 1}', color)
             elif subject_info.is_total_subject():
                 set_center_cell(table.cell(row_idx, 0), class_score.name, color)
@@ -240,10 +243,11 @@ class ScoreAnalyseService:
                 set_center_cell(table.cell(row_idx, 3), self.to_string(subject.pass_rate), color)
                 set_center_cell(table.cell(row_idx, 4), self.to_string(subject.top_rate), color)
                 set_center_cell(table.cell(row_idx, 5), self.to_string(subject.care_score), color)
-                set_center_cell(table.cell(row_idx, 6), self.to_string(subject.total), color)
+                set_center_cell(table.cell(row_idx, 6), self.to_string(class_total), color)
                 if class_score.name != '校平':
-                    set_center_cell(table.cell(row_idx, 7), self.to_string(subject.total - school_total), color)
-                    set_center_cell(table.cell(row_idx, 8), str(sort_total.index(subject.total) + 1), color)
+                    class_no = sort_total.index(class_total) + 1
+                    set_center_cell(table.cell(row_idx, 7), self.to_string(class_diff), color)
+                    set_center_cell(table.cell(row_idx, 8), str(class_no), color)
                     set_center_cell(table.cell(row_idx, 9), f'{teacher_name}{idx + 1}', color)
             else:
                 set_center_cell(table.cell(row_idx, 0), class_score.name, color)
@@ -251,10 +255,11 @@ class ScoreAnalyseService:
                 set_center_cell(table.cell(row_idx, 2), self.to_string(subject.pass_rate), color)
                 set_center_cell(table.cell(row_idx, 3), self.to_string(subject.top_rate), color)
                 set_center_cell(table.cell(row_idx, 4), self.to_string(subject.care_score), color)
-                set_center_cell(table.cell(row_idx, 5), self.to_string(subject.total), color)
+                set_center_cell(table.cell(row_idx, 5), self.to_string(class_total), color)
                 if class_score.name != '校平':
-                    set_center_cell(table.cell(row_idx, 6), self.to_string(subject.total - school_total), color)
-                    set_center_cell(table.cell(row_idx, 7), str(sort_total.index(subject.total) + 1), color)
+                    class_no = sort_total.index(class_total) + 1
+                    set_center_cell(table.cell(row_idx, 6), self.to_string(class_diff), color)
+                    set_center_cell(table.cell(row_idx, 7), str(class_no), color)
                     set_center_cell(table.cell(row_idx, 8), f'{teacher_name}{idx + 1}', color)
             row.next()
 

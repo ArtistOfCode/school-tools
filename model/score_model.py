@@ -41,6 +41,13 @@ class SubjectScore:
         self.total_stu = []
         self.care_stu = []
 
+    def calc_total(self, english=False):
+        p4, p3, p2, p1 = Decimal('0.4'), Decimal('0.3'), Decimal('0.2'), Decimal('0.1')
+        if english:
+            return self.average_score * p4 + self.pass_rate * p4 + self.care_score * p2
+        else:
+            return self.average_score * p4 + self.pass_rate * p3 + self.top_rate * p2 + self.care_score * p1
+
 
 class ClassScore:
     # 班级名称 总人数 语文成绩 数学成绩 英语成绩 总评成绩
