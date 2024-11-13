@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from openpyxl.cell import Cell
-from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, Color
 from pptx.dml.color import RGBColor
 from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
 
@@ -9,7 +9,7 @@ from model.score_model import SubjectInfo
 
 bold = Font(bold=True)
 center = Alignment(horizontal='center')
-fill = PatternFill('lightGray')
+fill = PatternFill('solid', fgColor=Color('e3e3e3'))
 thin_side = Side(style='thin', color='000000')
 thin_border = Border(thin_side, thin_side, thin_side, thin_side)
 
