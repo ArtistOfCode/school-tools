@@ -1,11 +1,7 @@
-from decimal import Decimal
-
 from openpyxl.cell import Cell
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, Color
 from pptx.dml.color import RGBColor
 from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
-
-from model.score_model import SubjectInfo
 
 bold = Font(bold=True)
 center = Alignment(horizontal='center')
@@ -41,20 +37,12 @@ def set_center_cell(cell, value: str, color=None):
 
 
 class CellIndex:
-    value: int
 
-    def __init__(self, row=1): self.value = row
+    def __init__(self, row=1):
+        self.value = row
 
     def next(self, step=1):
         self.value += step
-
-
-subjects = [
-    SubjectInfo('chinese', '语文', lambda s: s.chinese),
-    SubjectInfo('math', '数学', lambda s: s.math),
-    SubjectInfo('english', '英语', lambda s: s.english),
-    SubjectInfo('two', '总评', lambda s: s.two, Decimal('2')),
-]
 
 
 def is_low_grade(name: str): return name == '一年级' or name == '二年级'

@@ -7,19 +7,12 @@ from openpyxl.cell.cell import TYPE_NUMERIC
 
 
 class Student:
-    # 年级 班级 学生姓名 语文 数学 英语 总评
-    grade_name: str
-    class_name: str
-    name: str
-    chinese: Decimal
-    math: Decimal
-    english: Decimal
-    two: Decimal
 
     def __init__(self, row: Tuple[Cell, ...]):
-        self.grade_name = row[0].value
-        self.class_name = row[1].value
-        self.name = row[2].value
+        # 年级 班级 学生姓名 语文 数学 英语 总评
+        self.grade_name: str = row[0].value
+        self.class_name: str = row[1].value
+        self.name: str = row[2].value
         self.chinese = Decimal(str(row[3].value))
         self.math = Decimal(str(row[4].value))
         self.two = self.chinese + self.math

@@ -10,21 +10,18 @@ from openpyxl.worksheet.worksheet import Worksheet
 from pptx import Presentation
 from pptx.util import Inches
 
-from model.score_model import ClassScore, SubjectInfo, SubjectScore
+from model.score_model import ClassScore, SubjectScore
 from model.student_model import is_valid_stu, Student
-from service.excel_styles import set_cell, set_title_cell, set_float_cell, CellIndex, is_low_grade, subjects, \
-    set_center_cell
+from model.subject_model import Subjects
+from service.excel_styles import set_cell, set_title_cell, set_float_cell, CellIndex, is_low_grade, set_center_cell
+
+DATA_FILES = ['一年级.xlsx', '二年级.xlsx', '三年级.xlsx', '四年级.xlsx', '五年级.xlsx', '六年级.xlsx']
 
 
 class ScoreAnalyseService:
-    file_paths: List[str]
-    result_path: str
-    ppt_template_path: str
-    ppt_result_path: str
 
     def __init__(self, root_dir):
-        files = ['一年级.xlsx', '二年级.xlsx', '三年级.xlsx', '四年级.xlsx', '五年级.xlsx', '六年级.xlsx']
-        self.file_paths = [f'{root_dir}/data/read/{file}' for file in files]
+        self.file_paths = [f'{root_dir}/data/read/{f}' for f in DATA_FILES]
         self.result_path = f'{root_dir}/data/成绩分析结果.xlsx'
         self.ppt_template_path = f'{root_dir}/data/成绩分析模板.pptx'
         self.ppt_result_path = f'{root_dir}/data/成绩分析结果.pptx'
@@ -46,10 +43,10 @@ class ScoreAnalyseService:
             grade_slide.shapes.title.text = f'{title}成绩分析'
 
             row = CellIndex()
-            for subject in subjects: self.write_class(grade_sheet, school_score, subject, row)
+            for subject in Subjects: self.write_class(grade_sheet, school_score, subject, row)
             column = CellIndex(15)
-            for subject in subjects: self.write_care_stu(grade_sheet, school_score, subject, CellIndex(), column)
-            for subject in subjects: self.write_pptx(school_ppt, title, school_score, subject)
+            for subject in Subjects: self.write_care_stu(grade_sheet, school_score, subject, CellIndex(), column)
+            for subject in Subjects: self.write_pptx(school_ppt, title, school_score, subject)
 
             workbook.close()
             logging.info(f'{title}分析完成！')
@@ -73,9 +70,9 @@ class ScoreAnalyseService:
     def class_analyse(workbook: Workbook):
         for sheetname in workbook.sheetnames:
             sheet = workbook[sheetname]
-            class_score = ClassScore(sheetname)
-            students = [Student(row) for row in list(filter(is_valid_stu, sheet.iter_rows(min_row=2)))]
+            students = [Student(row) for row in sheet.iter_rows(min_row=2) if is_valid_stu(row)]
 
+            class_score = ClassScore(sheetname)
             class_score.total_count = len(students)
 
             for student in students: class_score.add_student(student)
@@ -85,15 +82,15 @@ class ScoreAnalyseService:
 
     # 保存分析结果
     @staticmethod
-    def write_class(grade_sheet: Worksheet, school_score: List[ClassScore], subject_info: SubjectInfo, row: CellIndex):
-        if is_low_grade(grade_sheet.title) and subject_info.is_high_subject(): return
+    def write_class(grade_sheet: Worksheet, school_score: List[ClassScore], subject: Subjects, row: CellIndex):
+        if is_low_grade(grade_sheet.title) and subject == Subjects.ENGLISH: return
 
-        pass_name = '三科' if not is_low_grade(grade_sheet.title) and subject_info.is_total_subject() else ''
-        teacher_name = '班主任' if subject_info.is_total_subject() else '教者'
+        pass_name = '三科' if not is_low_grade(grade_sheet.title) and subject == Subjects.TWO else ''
+        teacher_name = '班主任' if subject == Subjects.TWO else '教者'
 
         headers = ['班级', '总人数', '平均分', f'{pass_name}及格人数', f'{pass_name}及格率', '特优人数', '特优率',
                    '关爱平均分', '总评', '与校平差', '排名', teacher_name]
-        set_title_cell(grade_sheet.cell(row.value, 1), subject_info.name)
+        set_title_cell(grade_sheet.cell(row.value, 1), subject.value.name)
         row.next()
 
         for idx, header in enumerate(headers): set_title_cell(grade_sheet.cell(row.value, idx + 1), header)
@@ -102,20 +99,20 @@ class ScoreAnalyseService:
         first_row = row.value
         c3 = None
         for idx, class_score in enumerate(school_score):
-            subject = subject_info.func(class_score)
+            _subject: SubjectScore = getattr(class_score, subject.value.code)
             row_index = row.value
             set_cell(grade_sheet.cell(row_index, 1), class_score.name)
             set_cell(grade_sheet.cell(row_index, 2), class_score.total_count)
-            c1 = set_float_cell(grade_sheet.cell(row_index, 3), subject.average_score)
-            set_cell(grade_sheet.cell(row_index, 4), subject.pass_count)
-            c2 = set_float_cell(grade_sheet.cell(row_index, 5), subject.pass_rate)
-            if subject_info.code != 'english':
-                set_cell(grade_sheet.cell(row_index, 6), subject.top_count)
-                c3 = set_float_cell(grade_sheet.cell(row_index, 7), subject.top_rate)
-            c4 = set_float_cell(grade_sheet.cell(row_index, 8), subject.care_score)
+            c1 = set_float_cell(grade_sheet.cell(row_index, 3), _subject.average_score)
+            set_cell(grade_sheet.cell(row_index, 4), _subject.pass_count)
+            c2 = set_float_cell(grade_sheet.cell(row_index, 5), _subject.pass_rate)
+            if subject != Subjects.ENGLISH:
+                set_cell(grade_sheet.cell(row_index, 6), _subject.top_count)
+                c3 = set_float_cell(grade_sheet.cell(row_index, 7), _subject.top_rate)
+            c4 = set_float_cell(grade_sheet.cell(row_index, 8), _subject.care_score)
 
             # 计算总评
-            if subject_info.code == 'english':
+            if subject == Subjects.ENGLISH:
                 c5 = set_float_cell(grade_sheet.cell(row_index, 9),
                                     f'={c1.coordinate}*0.4+{c2.coordinate}*0.4+{c4.coordinate}*0.2')
             else:
@@ -137,52 +134,52 @@ class ScoreAnalyseService:
 
     # 保存关爱学生
     @staticmethod
-    def write_care_stu(grade_sheet: Worksheet, school_score: List[ClassScore], subject_info: SubjectInfo,
-                       row: CellIndex, column: CellIndex):
-        if is_low_grade(grade_sheet.title) and subject_info.is_high_subject(): return
+    def write_care_stu(grade_sheet: Worksheet, school_score: List[ClassScore], subject: Subjects, row: CellIndex,
+                       column: CellIndex):
+        if is_low_grade(grade_sheet.title) and subject == Subjects.ENGLISH: return
 
         name_col, score_col = column.value, column.value + 1
         column.next(3)
 
         for class_score in school_score:
-            subject = subject_info.func(class_score)
-            if len(subject.care_stu) == 0 or subject.care_score == 0 or class_score.name == '校平': continue
+            _subject: SubjectScore = getattr(class_score, subject.value.code)
+            if len(_subject.care_stu) == 0 or _subject.care_score == 0 or class_score.name == '校平': continue
 
             set_title_cell(grade_sheet.cell(row.value, name_col),
-                           f'{class_score.name}班{subject_info.name}（{len(subject.care_stu)}）')
+                           f'{class_score.name}班{subject.value.name}（{len(_subject.care_stu)}）')
             row.next()
 
             set_title_cell(grade_sheet.cell(row.value, name_col), '姓名')
             set_title_cell(grade_sheet.cell(row.value, score_col), '分数')
             row.next()
 
-            for stu in subject.care_stu:
+            for stu in _subject.care_stu:
                 set_cell(grade_sheet.cell(row.value, name_col), stu.name)
-                set_cell(grade_sheet.cell(row.value, score_col), subject_info.func(stu))
+                set_cell(grade_sheet.cell(row.value, score_col), getattr(stu, subject.value.code))
                 row.next()
             row.next()
 
     # 保存分析结果PPT
-    def write_pptx(self, school_ppt, title, school_score, subject_info):
-        if is_low_grade(title) and subject_info.is_high_subject(): return
+    def write_pptx(self, school_ppt, title, school_score, subject: Subjects):
+        if is_low_grade(title) and subject == Subjects.ENGLISH: return
 
         # 添加幻灯片
         subject_layout = school_ppt.slide_layouts[2]
         class_layout = school_ppt.slide_layouts[3]
         subject_slide = school_ppt.slides.add_slide(subject_layout)
-        subject_slide.shapes.title.text = f'{subject_info.name}情况分析'
+        subject_slide.shapes.title.text = f'{subject.value.name}情况分析'
         class_slide = school_ppt.slides.add_slide(class_layout)
-        class_slide.shapes.title.text = f'{subject_info.name}情况分析'
+        class_slide.shapes.title.text = f'{subject.value.name}情况分析'
 
         # 计算成绩表格表头
-        pass_name = '三科\v' if not is_low_grade(title) and subject_info.is_total_subject() else ''
-        teacher_name = '班主任' if subject_info.is_total_subject() else '教者'
+        pass_name = '三科\v' if not is_low_grade(title) and subject == Subjects.TWO else ''
+        teacher_name = '班主任' if subject == Subjects.TWO else '教者'
         headers = ['班级', '平均分', f'{pass_name}及格率', '特优率', '关爱\v平均分', '总评', '与校\v平差',
                    '名次', teacher_name]
-        if subject_info.is_high_subject():
+        if subject == Subjects.ENGLISH:
             headers = ['班级', '平均分', f'{pass_name}及格率', '关爱\v平均分', '总评', '与校\v平差', '名次',
                        teacher_name]
-        if subject_info.is_total_subject():
+        if subject == Subjects.TWO:
             headers = ['班级', '平均分', f'{pass_name}及格人数', f'{pass_name}及格率', '特优率', '关爱\v平均分',
                        '总评', '与校\v平差', '名次', teacher_name]
 
@@ -206,8 +203,8 @@ class ScoreAnalyseService:
         # 计算总评
         total_score = []
         for class_score in school_score:
-            subject: SubjectScore = subject_info.func(class_score)
-            total_score.append(subject.calc_total(subject_info.is_high_subject()))
+            _subject: SubjectScore = getattr(class_score, subject.value.code)
+            total_score.append(_subject.calc_total())
 
         # 计算排名
         school_total_idx = len(total_score) - 1
@@ -218,31 +215,31 @@ class ScoreAnalyseService:
         for idx, class_score in enumerate(school_score):
             # color = 'ff0000' if class_score.name == '校平' else None
             color = None
-            subject: SubjectScore = subject_info.func(class_score)
+            _subject: SubjectScore = getattr(class_score, subject.value.code)
             row_idx = row.value
             table.rows[row_idx].height = height
 
             class_total = total_score[idx]
             class_diff = class_total - school_total
 
-            if subject_info.is_high_subject():
+            if subject == Subjects.ENGLISH:
                 set_center_cell(table.cell(row_idx, 0), class_score.name, color)
-                set_center_cell(table.cell(row_idx, 1), self.to_string(subject.average_score), color)
-                set_center_cell(table.cell(row_idx, 2), self.to_string(subject.pass_rate), color)
-                set_center_cell(table.cell(row_idx, 3), self.to_string(subject.care_score), color)
+                set_center_cell(table.cell(row_idx, 1), self.to_string(_subject.average_score), color)
+                set_center_cell(table.cell(row_idx, 2), self.to_string(_subject.pass_rate), color)
+                set_center_cell(table.cell(row_idx, 3), self.to_string(_subject.care_score), color)
                 set_center_cell(table.cell(row_idx, 4), self.to_string(class_total), color)
                 if class_score.name != '校平':
                     class_no = sort_total.index(class_total) + 1
                     set_center_cell(table.cell(row_idx, 5), self.to_string(class_diff), color)
                     set_center_cell(table.cell(row_idx, 6), str(class_no), color)
                     set_center_cell(table.cell(row_idx, 7), f'{teacher_name}{idx + 1}', color)
-            elif subject_info.is_total_subject():
+            elif subject == Subjects.TWO:
                 set_center_cell(table.cell(row_idx, 0), class_score.name, color)
-                set_center_cell(table.cell(row_idx, 1), self.to_string(subject.average_score), color)
-                set_center_cell(table.cell(row_idx, 2), str(subject.pass_count), color)
-                set_center_cell(table.cell(row_idx, 3), self.to_string(subject.pass_rate), color)
-                set_center_cell(table.cell(row_idx, 4), self.to_string(subject.top_rate), color)
-                set_center_cell(table.cell(row_idx, 5), self.to_string(subject.care_score), color)
+                set_center_cell(table.cell(row_idx, 1), self.to_string(_subject.average_score), color)
+                set_center_cell(table.cell(row_idx, 2), str(_subject.pass_count), color)
+                set_center_cell(table.cell(row_idx, 3), self.to_string(_subject.pass_rate), color)
+                set_center_cell(table.cell(row_idx, 4), self.to_string(_subject.top_rate), color)
+                set_center_cell(table.cell(row_idx, 5), self.to_string(_subject.care_score), color)
                 set_center_cell(table.cell(row_idx, 6), self.to_string(class_total), color)
                 if class_score.name != '校平':
                     class_no = sort_total.index(class_total) + 1
@@ -251,10 +248,10 @@ class ScoreAnalyseService:
                     set_center_cell(table.cell(row_idx, 9), f'{teacher_name}{idx + 1}', color)
             else:
                 set_center_cell(table.cell(row_idx, 0), class_score.name, color)
-                set_center_cell(table.cell(row_idx, 1), self.to_string(subject.average_score), color)
-                set_center_cell(table.cell(row_idx, 2), self.to_string(subject.pass_rate), color)
-                set_center_cell(table.cell(row_idx, 3), self.to_string(subject.top_rate), color)
-                set_center_cell(table.cell(row_idx, 4), self.to_string(subject.care_score), color)
+                set_center_cell(table.cell(row_idx, 1), self.to_string(_subject.average_score), color)
+                set_center_cell(table.cell(row_idx, 2), self.to_string(_subject.pass_rate), color)
+                set_center_cell(table.cell(row_idx, 3), self.to_string(_subject.top_rate), color)
+                set_center_cell(table.cell(row_idx, 4), self.to_string(_subject.care_score), color)
                 set_center_cell(table.cell(row_idx, 5), self.to_string(class_total), color)
                 if class_score.name != '校平':
                     class_no = sort_total.index(class_total) + 1
