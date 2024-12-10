@@ -1,24 +1,25 @@
-from decimal import Decimal
 from enum import unique, Enum
-from typing import Any
 
 
-class SubjectInfo:
+class Subject:
 
-    def __init__(self, code: str, name: str, func: Any, factor: Decimal = Decimal('1')):
-        # 科目编码 科目名称
+    def __init__(self, code: str, name: str):
         self.code = code
         self.name = name
-        self.func = func
-        self.factor = factor
+
+    def __hash__(self):
+        return hash(self.code)
 
     def __eq__(self, other):
         return self.code == other.code
 
+    def __str__(self):
+        return self.name
+
 
 @unique
 class Subjects(Enum):
-    CHINESE = SubjectInfo('chinese', '语文', lambda s: s.chinese)
-    MATH = SubjectInfo('math', '数学', lambda s: s.math)
-    ENGLISH = SubjectInfo('english', '英语', lambda s: s.english)
-    TWO = SubjectInfo('two', '总评', lambda s: s.two, Decimal('2'))
+    CHINESE = Subject('chinese', '语文')
+    MATH = Subject('math', '数学')
+    ENGLISH = Subject('english', '英语')
+    TWO = Subject('two', '总评')

@@ -3,8 +3,7 @@ from decimal import Decimal
 from typing import List
 
 from model.student_model import Student
-from model.subject_model import SubjectInfo, Subjects
-from service.excel_styles import is_low_grade
+from model.subject_model import Subjects
 
 # 及格分数
 PASS_SCORE = Decimal('60')
@@ -44,7 +43,7 @@ class SubjectScore:
             if score >= SINGLE_TOP_SCORE: self.top_count += 1
         # 总评计算方法
         else:
-            if is_low_grade(stu.grade_name) and stu.chinese >= PASS_SCORE and stu.math >= PASS_SCORE:
+            if stu.is_low_grade and stu.chinese >= PASS_SCORE and stu.math >= PASS_SCORE:
                 self.pass_count += 1
             elif stu.chinese >= PASS_SCORE and stu.math >= PASS_SCORE and stu.english >= PASS_SCORE:
                 self.pass_count += 1
@@ -58,11 +57,14 @@ class SubjectScore:
         self.care_count += class_subject.care_count
         self.total_stu.extend(class_subject.total_stu)
 
+    # 计算总评公式
     def calc_total(self):
         p4, p3, p2, p1 = Decimal('0.4'), Decimal('0.3'), Decimal('0.2'), Decimal('0.1')
         if self.subject == Subjects.ENGLISH:
+            # 低年级：平均分 * 40% + 及格率 * 40% + 关爱平均分 * 20%
             return self.average_score * p4 + self.pass_rate * p4 + self.care_score * p2
         else:
+            # 高年级：平均分 * 40% + 及格率 * 30% + 特优率 * 20% + 关爱平均分 * 10%
             return self.average_score * p4 + self.pass_rate * p3 + self.top_rate * p2 + self.care_score * p1
 
 
@@ -94,7 +96,7 @@ class ClassScore:
         self.math.add_student(stu)
         self.math.care_count = care_count
 
-        if not is_low_grade(stu.grade_name):
+        if not stu.is_low_grade:
             self.english.add_student(stu)
             self.english.care_count = care_count
 
@@ -102,23 +104,25 @@ class ClassScore:
         self.two.care_count = care_count
 
     # 计算科目统计指标
-    def calc_subject(self, subject: SubjectInfo):
-        _subject: SubjectScore = getattr(self, subject.code)
+    def calc_subject(self, subject: Subjects):
+        _subject: SubjectScore = getattr(self, subject.value.code)
         _total_count = Decimal(self.total_count)
 
-        _subject.average_score = self.divide(_subject.total_score / subject.factor, _total_count)
+        _subject.average_score = self.divide(_subject.total_score, _total_count)
+        if subject == Subjects.TWO:
+            _subject.average_score = self.divide(_subject.average_score, Decimal('2'))
         _subject.pass_rate = self.divide(Decimal(_subject.pass_count) * 100, _total_count)
         _subject.top_rate = self.divide(Decimal(_subject.top_count) * 100, _total_count)
 
         if len(_subject.total_stu) > 0:
-            _subject.total_stu.sort(key=lambda s: getattr(s, subject.code))
+            _subject.total_stu.sort(key=lambda s: getattr(s, subject.value.code))
             _subject.care_stu = _subject.total_stu[:_subject.care_count]
             _subject.care_stu.reverse()
-            _subject.care_score = self.average([getattr(s, subject.code) for s in _subject.care_stu])
+            _subject.care_score = self.average([getattr(s, subject.value.code) for s in _subject.care_stu])
 
     # 计算班级所有科目的统计指标（包括班级和校平）
     def calc_class(self):
-        for subject in Subjects: self.calc_subject(subject.value)
+        for subject in Subjects: self.calc_subject(subject)
 
     @staticmethod
     def divide(n1: Decimal, n2: Decimal):

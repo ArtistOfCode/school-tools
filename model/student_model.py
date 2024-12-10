@@ -6,6 +6,9 @@ from openpyxl.cell import Cell
 from openpyxl.cell.cell import TYPE_NUMERIC
 
 
+def is_low_grade(name: str): return name == '一年级' or name == '二年级'
+
+
 class Student:
 
     def __init__(self, row: Tuple[Cell, ...]):
@@ -20,6 +23,10 @@ class Student:
             self.english = Decimal('0')
         else:
             self.english = Decimal(str(row[5].value))
+
+    @property
+    def is_low_grade(self):
+        return is_low_grade(self.grade_name)
 
 
 def is_valid_stu(row: Tuple[Cell, ...]):

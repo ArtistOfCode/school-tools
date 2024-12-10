@@ -11,9 +11,9 @@ from pptx import Presentation
 from pptx.util import Inches
 
 from model.score_model import ClassScore, SubjectScore
-from model.student_model import is_valid_stu, Student
+from model.student_model import is_valid_stu, Student, is_low_grade
 from model.subject_model import Subjects
-from service.excel_styles import set_cell, set_title_cell, set_float_cell, CellIndex, is_low_grade, set_center_cell
+from service.excel_styles import set_cell, set_title_cell, set_float_cell, CellIndex, set_center_cell
 
 DATA_FILES = ['一年级.xlsx', '二年级.xlsx', '三年级.xlsx', '四年级.xlsx', '五年级.xlsx', '六年级.xlsx']
 

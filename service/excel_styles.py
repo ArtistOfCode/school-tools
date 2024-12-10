@@ -3,15 +3,15 @@ from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, Color
 from pptx.dml.color import RGBColor
 from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
 
-bold = Font(bold=True)
-center = Alignment(horizontal='center')
-fill = PatternFill('solid', fgColor=Color('e3e3e3'))
-thin_side = Side(style='thin', color='000000')
-thin_border = Border(thin_side, thin_side, thin_side, thin_side)
+__bold = Font(bold=True)
+__center = Alignment(horizontal='center')
+__fill = PatternFill('solid', fgColor=Color('e3e3e3'))
+__thin_side = Side(style='thin', color='000000')
+__thin_border = Border(__thin_side, __thin_side, __thin_side, __thin_side)
 
 
 def set_title_cell(cell: Cell, value) -> Cell:
-    return set_cell(cell, value, bold, center, fill)
+    return set_cell(cell, value, __bold, __center, __fill)
 
 
 def set_float_cell(cell: Cell, value) -> Cell:
@@ -20,7 +20,7 @@ def set_float_cell(cell: Cell, value) -> Cell:
 
 
 def set_cell(cell: Cell, value, font: Font = None, align: Alignment = None, fill: PatternFill = None,
-             border: Border = thin_border) -> Cell:
+             border: Border = __thin_border) -> Cell:
     cell.value = value
     if font is not None: cell.font = font
     if align is not None: cell.alignment = align
@@ -43,6 +43,3 @@ class CellIndex:
 
     def next(self, step=1):
         self.value += step
-
-
-def is_low_grade(name: str): return name == '一年级' or name == '二年级'
