@@ -1,12 +1,14 @@
 import logging
-from decimal import Decimal
 from typing import Tuple
 
+import numpy as np
 from openpyxl.cell import Cell
 from openpyxl.cell.cell import TYPE_NUMERIC
 
+from model.subject_model import Subjects
 
-def is_low_grade(name: str): return name == '一年级' or name == '二年级'
+STU_DTYPE = np.dtype({'names': ['grade_name', 'class_name', 'name'] + [sub for sub, _ in Subjects.values()],
+                      'formats': ['U32', 'U32', 'U32', 'f', 'f', 'f', 'f']})
 
 
 class Student:
@@ -14,19 +16,19 @@ class Student:
     def __init__(self, row: Tuple[Cell, ...]):
         # 年级 班级 学生姓名 语文 数学 英语 总评
         self.grade_name: str = row[0].value
-        self.class_name: str = row[1].value
+        self.class_name: str = str(row[1].value)
         self.name: str = row[2].value
-        self.chinese = Decimal(str(row[3].value))
-        self.math = Decimal(str(row[4].value))
+        self.chinese = float(row[3].value)
+        self.math = float(row[4].value)
         self.two = self.chinese + self.math
         if len(row) == 5 or row[5] is None or row[5].value is None:
-            self.english = Decimal('0')
+            self.english = float(0)
         else:
-            self.english = Decimal(str(row[5].value))
+            self.english = float(row[5].value)
 
     @property
-    def is_low_grade(self):
-        return is_low_grade(self.grade_name)
+    def to_tuple(self):
+        return self.grade_name, self.class_name, self.name, self.chinese, self.math, self.english, self.two
 
 
 def is_valid_stu(row: Tuple[Cell, ...]):
