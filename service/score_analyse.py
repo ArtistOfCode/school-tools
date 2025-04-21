@@ -14,13 +14,14 @@ from model.student_model import is_valid_stu, Student, STU_DTYPE
 from model.subject_model import Subjects
 from service.excel_styles import set_cell, set_title_cell, set_float_cell, CellIndex, set_center_cell
 
-DATA_FILES = ['一年级.xlsx', '二年级.xlsx', '三年级.xlsx', '四年级.xlsx', '五年级.xlsx', '六年级.xlsx']
-
 
 class ScoreAnalyseService:
 
     def __init__(self, root_dir):
-        self.file_paths = [f'{root_dir}/data/read/{f}' for f in DATA_FILES]
+        data_path = f'{root_dir}/data/read'
+        self.file_paths = [os.path.join(data_path, f) for f in os.listdir(data_path) if
+                           os.path.isfile(os.path.join(data_path, f))]
+        self.file_paths.sort()
         self.result_path = f'{root_dir}/data/成绩分析结果.xlsx'
         self.ppt_template_path = f'{root_dir}/data/成绩分析模板.pptx'
         self.ppt_result_path = f'{root_dir}/data/成绩分析结果.pptx'
