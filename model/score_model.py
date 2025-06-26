@@ -26,6 +26,8 @@ class SubjectScore:
         self.care_stu_array: Optional[ndarray] = None
         # 总评
         self.total = 0.0
+        # 与校平差
+        self.diff = 0.0
         # 名次
         self.rank = 0
         # 全局配置
@@ -75,13 +77,15 @@ class SubjectScore:
         # 高年级一类关爱指标计算总评
         if not class_score.is_low:
             if self.subject == Subjects.ENGLISH:
-                self.total = self.round(_mean * 0.4 + _pass_rate * 0.2 + _care_mean * 0.4)
+                self.total = self.round(_mean * 0.4 + _pass_rate * 0.4 + _care_mean * 0.2)
             else:
                 self.total = self.round(_mean * 0.4 + _pass_rate * 0.3 + _top_rate * 0.2 + _care_mean * 0.1)
 
         # 校平分析最后算出关爱分数线
         if class_score.is_school:
             self.care_stu_2 = _sub_arr.max(), _care, self.round((_total - _care) / _total * 100)
+            if class_score.is_low and self.subject != Subjects.ENGLISH:
+                self.total = self.round(_mean * 0.4 + _pass_rate * 0.4 + self.care_stu_2[2] * 0.2)
 
     def analyse_final(self, class_score: 'ClassScore', school_score: 'SubjectScore'):
         if class_score.is_school:
@@ -101,6 +105,9 @@ class SubjectScore:
             self.care_stu_array = _care_arr
             # 计算总评
             self.total = self.round(self.mean * 0.4 + self.pass_stu[1] * 0.4 + self.care_stu_2[2] * 0.2)
+
+        # 计算与校平差和名次
+        self.diff = self.round(self.total - school_score.total)
 
     @staticmethod
     def round(num):

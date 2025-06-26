@@ -1,7 +1,5 @@
 from openpyxl.cell import Cell
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, Color
-from pptx.dml.color import RGBColor
-from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
 
 __bold = Font(bold=True)
 __center = Alignment(horizontal='center')
@@ -27,13 +25,6 @@ def set_cell(cell: Cell, value, font: Font = None, align: Alignment = None, fill
     if fill is not None: cell.fill = fill
     if border is not None: cell.border = border
     return cell
-
-
-def set_center_cell(cell, value: str, color=None):
-    cell.text = value
-    cell.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
-    cell.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-    if color is not None: cell.text_frame.paragraphs[0].font.color.rgb = RGBColor.from_string(color)
 
 
 class CellIndex:
