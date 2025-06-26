@@ -38,8 +38,9 @@ def set_center_cell(cell, value: str, color=None):
 
 class CellIndex:
 
-    def __init__(self, row=1):
-        self.value = row
+    def __init__(self, init=1):
+        self.value = init
 
     def next(self, step=1):
         self.value += step
+        return self.value

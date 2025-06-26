@@ -3,22 +3,14 @@ from typing import Optional
 import numpy as np
 from numpy import ndarray
 
-from model.subject_model import Subjects
-
-# 及格分数
-PASS_SCORE = 60.0
-# 单科特优分数
-SINGLE_TOP_SCORE = 92.5
-# 两科特优分数
-TWO_TOP_SCORE = 185.0
-# 关爱人数比例
-CARE_RATE = 0.2
+from model.config_model import Config
+from utils.utils import is_low_grade, is_school_class, Subjects
 
 
 class SubjectScore:
 
-    def __init__(self, subject: Subjects):
-        # 科目 平均分 及格指标() 特优指标() 关爱指标(关爱人数，关爱率，关爱平均分)
+    def __init__(self, config: Config, subject: Subjects):
+        # 科目
         self.subject = subject
         # 平均分
         self.mean = 0.0
@@ -32,71 +24,83 @@ class SubjectScore:
         self.care_stu_2 = (0.0, 0, 0.0)
         # 关爱学生列表
         self.care_stu_array: Optional[ndarray] = None
+        # 总评
+        self.total = 0.0
+        # 名次
+        self.rank = 0
+        # 全局配置
+        self.config = config
 
     def analyse(self, class_score: 'ClassScore'):
-        chinese, _ = Subjects.CHINESE.value
-        math, _ = Subjects.MATH.value
-        english, _ = Subjects.ENGLISH.value
-        two, _ = Subjects.TWO.value
-        current, _ = self.subject.value
-
-        total_stu = class_score.total_stu
-        stu_array = class_score.array
-        subject_array = stu_array[current]
+        # 班级总人数
+        _total = class_score.total_stu
+        # 班级成绩数据
+        _stu = class_score.array
+        # 班级当前科成绩
+        _sub = _stu[self.subject.code]
 
         if self.subject != Subjects.TWO:
             # 单科成绩分析
-            _mean = subject_array.mean()
-            _pass_count = stu_array[subject_array >= PASS_SCORE].size
-            _top_count = stu_array[subject_array >= SINGLE_TOP_SCORE].size
+            _mean = _sub.mean()
+            _pass = _stu[_sub >= self.config.pass_score].size
+            _top = _stu[_sub >= self.config.single_top_score].size
         else:
-            # 总评成绩分析
-            _chinese_pass = (stu_array[chinese] >= PASS_SCORE)
-            _math_pass = (stu_array[math] >= PASS_SCORE)
-            _english_pass = (stu_array[english] >= PASS_SCORE)
-
-            _mean = subject_array.mean() / 2
-            if class_score.is_low_grade:
-                _pass_count = stu_array[_chinese_pass & _math_pass].size
+            # 校平成绩分析
+            _chinese_pass = (_stu[Subjects.CHINESE.code] >= self.config.pass_score)
+            _math_pass = (_stu[Subjects.MATH.code] >= self.config.pass_score)
+            _mean = _sub.mean() / 2
+            if class_score.is_low:
+                _pass = _stu[_chinese_pass & _math_pass].size
             else:
-                _pass_count = stu_array[_chinese_pass & _math_pass & _english_pass].size
-            _top_count = stu_array[subject_array >= TWO_TOP_SCORE].size
+                _english_pass = (_stu[Subjects.ENGLISH.code] >= self.config.pass_score)
+                _pass = _stu[_chinese_pass & _math_pass & _english_pass].size
+            _top = _stu[_sub >= self.config.two_top_score].size
 
-        _pass_rate = _pass_count / total_stu * 100
-        _top_rate = _top_count / total_stu * 100
+        _pass_rate = _pass / _total * 100
+        _top_rate = _top / _total * 100
 
-        _care_count = int(total_stu * CARE_RATE)
-        _care_array = np.sort(stu_array, order=current)[:_care_count][::-1]
-        _subject_array = _care_array[current]
-        _care_mean = _subject_array.mean()
+        # 计算出关爱人数
+        _care = int(_total * self.config.care_rate)
+        # 计算当前科关爱学生列表
+        _care_arr = np.sort(_stu, order=self.subject.code)[:_care][::-1]
+        # 计算当前科关爱平均分
+        _sub_arr = _care_arr[self.subject.code]
+        _care_mean = _sub_arr.mean()
 
         self.mean = self.round(_mean)
-        self.pass_stu = _pass_count, self.round(_pass_rate)
-        self.top_stu = _top_count, self.round(_top_rate)
-        self.care_stu_1 = _care_count, self.round(_care_mean)
-        self.care_stu_array = _care_array
+        self.pass_stu = _pass, self.round(_pass_rate)
+        self.top_stu = _top, self.round(_top_rate)
+        self.care_stu_1 = _care, self.round(_care_mean)
+        self.care_stu_array = _care_arr
+        # 高年级一类关爱指标计算总评
+        if not class_score.is_low:
+            if self.subject == Subjects.ENGLISH:
+                self.total = self.round(_mean * 0.4 + _pass_rate * 0.2 + _care_mean * 0.4)
+            else:
+                self.total = self.round(_mean * 0.4 + _pass_rate * 0.3 + _top_rate * 0.2 + _care_mean * 0.1)
 
         # 校平分析最后算出关爱分数线
-        if class_score.is_school_class:
-            self.care_stu_2 = _subject_array.max(), _care_count, self.round((total_stu - _care_count) / total_stu * 100)
+        if class_score.is_school:
+            self.care_stu_2 = _sub_arr.max(), _care, self.round((_total - _care) / _total * 100)
 
-    def analyse_care(self, class_score: 'ClassScore', school_score: 'SubjectScore'):
-        if class_score.is_school_class: return
-        current, _ = self.subject.value
+    def analyse_final(self, class_score: 'ClassScore', school_score: 'SubjectScore'):
+        if class_score.is_school:
+            return
+        _total = class_score.total_stu
+        _stu = class_score.array
+        _sub = _stu[self.subject.code]
 
-        total_stu = class_score.total_stu
-        stu_array = class_score.array
-        subject_array = stu_array[current]
+        _care_score, *_ = school_score.care_stu_2
+        _care_arr = np.sort(_stu[_sub <= _care_score], order=self.subject.code)[::-1]
+        _care = _care_arr.size
 
-        _care_score, _, _ = school_score.care_stu_2
-        _care_array = np.sort(stu_array[subject_array <= _care_score], order=current)[::-1]
-        _care_count = _care_array.size
-
-        self.care_stu_2 = _care_score, _care_count, self.round((total_stu - _care_count) / total_stu * 100)
+        self.care_stu_2 = _care_score, _care, self.round((_total - _care) / _total * 100)
 
         # 低年级使用二类关爱指标，重新赋值关爱学生列表
-        if class_score.is_low_grade:
-            self.care_stu_array = _care_array
+        if class_score.is_low:
+            self.care_stu_array = _care_arr
+            # 计算总评
+            self.total = self.round(self.mean * 0.4 + self.pass_stu[1] * 0.4 + self.care_stu_2[2] * 0.2)
 
     @staticmethod
     def round(num):
@@ -105,31 +109,31 @@ class SubjectScore:
 
 class ClassScore:
 
-    def __init__(self, grade_name, name: str, array: ndarray):
+    def __init__(self, config: Config, grade_name: str, name: str, array: ndarray):
         # 年级名称 班级名称 总人数 语文成绩 数学成绩 英语成绩 总评成绩
         self.grade_name = grade_name
         self.name = name
         self.array = array
         self.total_stu = array.size
-        self.chinese = SubjectScore(Subjects.CHINESE)
-        self.math = SubjectScore(Subjects.MATH)
-        self.english = SubjectScore(Subjects.ENGLISH)
-        self.two = SubjectScore(Subjects.TWO)
+        self.chinese = SubjectScore(config, Subjects.CHINESE)
+        self.math = SubjectScore(config, Subjects.MATH)
+        self.english = SubjectScore(config, Subjects.ENGLISH)
+        self.two = SubjectScore(config, Subjects.TWO)
 
-    def analyse(self):
-        for sub, _ in Subjects.values():
-            subject: SubjectScore = getattr(self, sub)
+    def analyse1(self):
+        for sub in Subjects:
+            subject: SubjectScore = getattr(self, sub.code)
             subject.analyse(self)
 
-    def analyse_care(self, school_score: 'ClassScore'):
-        for sub, _ in Subjects.values():
-            subject: SubjectScore = getattr(self, sub)
-            subject.analyse_care(self, getattr(school_score, sub))
+    def analyse2(self, school_score: 'ClassScore'):
+        for sub in Subjects:
+            subject: SubjectScore = getattr(self, sub.code)
+            subject.analyse_final(self, getattr(school_score, sub.code))
 
     @property
-    def is_low_grade(self):
-        return self.grade_name == '一年级' or self.grade_name == '二年级'
+    def is_low(self):
+        return is_low_grade(self.grade_name)
 
     @property
-    def is_school_class(self):
-        return self.name == '校平'
+    def is_school(self):
+        return is_school_class(self.name)
