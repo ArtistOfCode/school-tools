@@ -4,12 +4,12 @@ from typing import List
 from openpyxl import Workbook
 from pptx import Presentation
 from pptx.slide import Slide
-from pptx.util import Inches
+from pptx.util import Cm
 
 from model.config_model import Config
 from model.score_model import SubjectScore, ClassScore
 from utils.excel_utils import CellIndex, set_cell, set_title_cell, set_float_cell
-from utils.ppt_utils import add_layout_slide, set_center_cell
+from utils.ppt_utils import add_layout_slide, set_center_cell, pos, add_table, add_textbox, pos_cm
 from utils.utils import Subjects, is_school_class, is_low_grade
 
 
@@ -157,6 +157,8 @@ class ScoreSave:
             slide = add_layout_slide(self.ppt, 3, f'{desc}情况分析')
             # 添加成绩总结页表格
             self.__add_pptx_table(_low, code, slide)
+            # 添加关爱生页
+            self.__add_pptx_care(_low, code, desc)
 
     def save(self):
         self.excel.save(self.config.result_path)
@@ -182,20 +184,19 @@ class ScoreSave:
         # @formatter:on
 
         # 成绩表格排版
-        width, height = Inches(1.2), Inches(0.5)
-        top, left = Inches(1.5), Inches((self.ppt.slide_width.inches - len(headers) * 1.2) / 2)
-        max_row, max_column = len(self.score) + 2, len(headers)
-        table = slide.shapes.add_table(max_row, max_column, left, top, width, height).table
+        w, h, t, l = pos(1.2, 0.5, 1.5, (self.ppt.slide_width.inches - len(headers) * 1.2) / 2)
+        _size = len(self.score) + 2, len(headers)
+        table = add_table(slide, _size, (w, h, t, l))
 
         for idx, header in enumerate(headers):
-            table.columns[idx].width = width
+            table.columns[idx].width = w
             set_center_cell(table.cell(0, idx), header)
 
         row = CellIndex()
         for _score in self.score:
             _sub: SubjectScore = getattr(_score, code)
             row_idx = row.value
-            table.rows[row_idx].height = height
+            table.rows[row_idx].height = h
 
             col = CellIndex(0)
 
@@ -234,6 +235,84 @@ class ScoreSave:
                 _set_cell(f'教师{row.value}')
             row.next()
         set_center_cell(table.cell(row.value, 0), '区平')
+
+    def __add_pptx_care(self, _low, code, desc):
+        if not self.config.need_care:
+            return
+
+        if code != Subjects.TWO.code:
+            slide = add_layout_slide(self.ppt, 3, f'{desc}关爱生')
+
+            if _low:
+                care_score = getattr(self.score[0], code).care_stu_2[0]
+                _pos = pos(3, 0.5, self.ppt.slide_height.inches - 1, 1)
+                add_textbox(slide, _pos, f'{desc}关爱分数线：{round(care_score, 2):g}')
+
+                for i, _score in enumerate(self.score[:-1]):
+                    _sub: SubjectScore = getattr(_score, code)
+                    _, care, _ = _sub.care_stu_2
+
+                    l = 2 if i == 0 else i * 5 + 2
+                    table = add_table(slide, (care + 2, 2), pos_cm(4.4, 0.9, 3.5, l))
+
+                    row = CellIndex(0)
+                    header = table.cell(row.value, 0)
+                    header.merge(table.cell(row.value, 1))
+                    _size = 14
+
+                    set_center_cell(header, f'{_score.name}班（{care}）', size=_size)
+                    row.next()
+                    set_center_cell(table.cell(row.value, 0), '姓名', size=_size)
+                    set_center_cell(table.cell(row.value, 1), '分数', size=_size)
+                    row.next()
+
+                    for stu in _sub.care_stu_array:
+                        set_center_cell(table.cell(row.value, 0), stu['name'], size=_size)
+                        set_center_cell(table.cell(row.value, 1), f'{stu[code]:g}', size=_size)
+                        row.next()
+        else:
+            for i, _score in enumerate(self.score[:-1]):
+                slide = add_layout_slide(self.ppt, 3, f'{desc}关爱生')
+
+                _sub = getattr(_score, code)
+                care_score, care, _ = _sub.care_stu_2
+                _pos = pos(2, 0.5, 1.2, 0.8)
+                add_textbox(slide, _pos, f'{_score.name}班：{care}个')
+
+                _pos = pos(3, 0.5, self.ppt.slide_height.inches - 1, 1)
+                add_textbox(slide, _pos, f'{desc}关爱分数线：{round(care_score, 2):g}')
+
+                if _low:
+                    headers = ['姓名', Subjects.CHINESE.desc, Subjects.MATH.desc, Subjects.TWO.desc]
+                else:
+                    headers = ['姓名', Subjects.CHINESE.desc, Subjects.MATH.desc, Subjects.ENGLISH.desc,
+                               Subjects.TWO.desc]
+
+                _size = care + 1, len(headers)
+                t = (self.ppt.slide_height.cm - _size[0] * 1.2) / 2
+                l = abs(self.ppt.slide_width.cm - len(headers) * 5) / 2
+                _pos = pos_cm(5, 1.2, t, l)
+                table = add_table(slide, _size, _pos)
+
+                _size = 14
+                row = CellIndex(0)
+                for _i, h in enumerate(headers):
+                    table.columns[_i].width = Cm(5)
+                    set_center_cell(table.cell(row.value, _i), h, size=_size)
+                table.rows[row.value].height = Cm(1.2)
+                row.next()
+
+                for stu in _sub.care_stu_array:
+                    col = CellIndex(0)
+                    table.rows[row.value].height = Cm(1.2)
+                    set_center_cell(table.cell(row.value, col.value), stu['name'], size=_size)
+                    set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.CHINESE.code]:g}', size=_size)
+                    set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.MATH.code]:g}', size=_size)
+                    if not _low:
+                        set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.ENGLISH.code]:g}',
+                                        size=_size)
+                    set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.TWO.code]:g}', size=_size)
+                    row.next()
 
 
 def to_str(number):
