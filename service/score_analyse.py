@@ -20,7 +20,7 @@ class ScoreAnalyseService:
     def __init__(self, root_dir):
         data_path = f'{root_dir}/data/read'
         self.file_paths = [os.path.join(data_path, f) for f in os.listdir(data_path) if
-                           os.path.isfile(os.path.join(data_path, f))]
+                           os.path.isfile(os.path.join(data_path, f)) and f.endswith('.xlsx')]
         self.file_paths.sort()
         self.result_path = f'{root_dir}/data/成绩分析结果.xlsx'
         self.ppt_template_path = f'{root_dir}/data/成绩分析模板.pptx'
