@@ -2,9 +2,9 @@ import logging
 from typing import List
 
 from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 from pptx import Presentation
 from pptx.slide import Slide
-from pptx.util import Cm
 
 from model.config_model import Config
 from model.score_model import SubjectScore, ClassScore
@@ -28,7 +28,7 @@ class ScoreSave:
         self.score = score
         return self.excel.create_sheet(self.grade)
 
-    def write_excel_score(self, sheet):
+    def write_excel_score(self, sheet: Worksheet):
         row = CellIndex()
 
         for code, desc in [s.value for s in Subjects]:
@@ -79,7 +79,7 @@ class ScoreSave:
                 row.next()
             row.next()
 
-    def write_excel_care(self, sheet):
+    def write_excel_care(self, sheet: Worksheet):
         if not self.config.need_care:
             return
 
@@ -129,11 +129,9 @@ class ScoreSave:
                     else:
                         set_cell(_cell(), stu[Subjects.CHINESE.code])
                         set_cell(_cell(), stu[Subjects.MATH.code])
-                        if _score.is_low:
-                            set_cell(_cell(), stu[Subjects.TWO.code])
-                        else:
+                        if not _score.is_low:
                             set_cell(_cell(), stu[Subjects.ENGLISH.code])
-                            set_cell(_cell(), stu[Subjects.TWO.code])
+                        set_cell(_cell(), stu[Subjects.TWO.code])
                     _row.next()
                 _row.next()
 
@@ -184,24 +182,23 @@ class ScoreSave:
         # @formatter:on
 
         # 成绩表格排版
-        w, h, t, l = pos(1.2, 0.5, 1.5, (self.ppt.slide_width.inches - len(headers) * 1.2) / 2)
-        _size = len(self.score) + 2, len(headers)
-        table = add_table(slide, _size, (w, h, t, l))
+        w, h = 1.2, 0.5
+        r, c = len(self.score) + 2, len(headers)
+        t = (self.ppt.slide_height.inches - r * h) / 2
+        l = (self.ppt.slide_width.inches - c * w) / 2
+        table = add_table(slide, (r, c), pos(w, h, t, l))
 
         for idx, header in enumerate(headers):
-            table.columns[idx].width = w
             set_center_cell(table.cell(0, idx), header)
 
-        row = CellIndex()
-        for _score in self.score:
+        for idx, _score in enumerate(self.score):
             _sub: SubjectScore = getattr(_score, code)
-            row_idx = row.value
-            table.rows[row_idx].height = h
 
+            idx += 1
             col = CellIndex(0)
 
-            _set_cell = lambda s: set_center_cell(table.cell(row_idx, col.next()), s)
-            set_center_cell(table.cell(row_idx, col.value), _score.name)
+            _set_cell = lambda s: set_center_cell(table.cell(idx, col.next()), s)
+            set_center_cell(table.cell(idx, col.value), _score.name)
             if _low:
                 if code in (Subjects.CHINESE.code, Subjects.MATH.code):
                     _set_cell(to_str(_sub.mean))
@@ -232,9 +229,8 @@ class ScoreSave:
                 _set_cell(to_str(_sub.diff))
                 _set_cell('')
                 _set_cell(str(_sub.rank))
-                _set_cell(f'教师{row.value}')
-            row.next()
-        set_center_cell(table.cell(row.value, 0), '区平')
+                _set_cell(f'教师{idx}')
+        set_center_cell(table.cell(len(self.score) + 1, 0), '区平')
 
     def __add_pptx_care(self, _low, code, desc):
         if not self.config.need_care:
@@ -253,17 +249,17 @@ class ScoreSave:
                     _, care, _ = _sub.care_stu_2
 
                     l = 2 if i == 0 else i * 5 + 2
-                    table = add_table(slide, (care + 2, 2), pos_cm(4.4, 0.9, 3.5, l))
+                    table = add_table(slide, (care + 2, 2), pos_cm(2.2, 0.9, 3.5, l))
 
                     row = CellIndex(0)
                     header = table.cell(row.value, 0)
                     header.merge(table.cell(row.value, 1))
-                    _size = 14
 
+                    _size = 14
                     set_center_cell(header, f'{_score.name}班（{care}）', size=_size)
                     row.next()
-                    set_center_cell(table.cell(row.value, 0), '姓名', size=_size)
-                    set_center_cell(table.cell(row.value, 1), '分数', size=_size)
+                    set_center_cell(table.cell(row.value, 0), '姓名', bold=True, size=_size)
+                    set_center_cell(table.cell(row.value, 1), '分数', bold=True, size=_size)
                     row.next()
 
                     for stu in _sub.care_stu_array:
@@ -288,23 +284,20 @@ class ScoreSave:
                     headers = ['姓名', Subjects.CHINESE.desc, Subjects.MATH.desc, Subjects.ENGLISH.desc,
                                Subjects.TWO.desc]
 
-                _size = care + 1, len(headers)
-                t = (self.ppt.slide_height.cm - _size[0] * 1.2) / 2
-                l = abs(self.ppt.slide_width.cm - len(headers) * 5) / 2
-                _pos = pos_cm(5, 1.2, t, l)
-                table = add_table(slide, _size, _pos)
+                w, h = 5, 1.2
+                r, c = care + 1, len(headers)
+                t = (self.ppt.slide_height.cm - r * h) / 2
+                l = (self.ppt.slide_width.cm - c * w) / 2
+                table = add_table(slide, (r, c), pos_cm(w, h, t, l))
 
                 _size = 14
                 row = CellIndex(0)
                 for _i, h in enumerate(headers):
-                    table.columns[_i].width = Cm(5)
                     set_center_cell(table.cell(row.value, _i), h, size=_size)
-                table.rows[row.value].height = Cm(1.2)
                 row.next()
 
                 for stu in _sub.care_stu_array:
                     col = CellIndex(0)
-                    table.rows[row.value].height = Cm(1.2)
                     set_center_cell(table.cell(row.value, col.value), stu['name'], size=_size)
                     set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.CHINESE.code]:g}', size=_size)
                     set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.MATH.code]:g}', size=_size)
