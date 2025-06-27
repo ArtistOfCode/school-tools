@@ -53,14 +53,14 @@ class ScoreAnalyseService:
 
     # 班级分析
     def class_analyse(self, grade_name, workbook: Workbook):
-        grade_students = []
-        for sheetname in workbook.sheetnames:
-            sheet = workbook[sheetname]
-            class_students = [parse_stu(grade_name, r) for r in sheet.iter_rows(min_row=2) if
-                              is_valid_stu(r, lambda: f'{grade_name} {sheetname}')]
-            grade_students.extend(class_students)
-            yield ClassScore(self.config, grade_name, sheetname, np.array(class_students, STU_DTYPE))
-        yield ClassScore(self.config, grade_name, '校平', np.array(grade_students, STU_DTYPE))
+        grade_stu = []
+        for cls_name in workbook.sheetnames:
+            sheet = workbook[cls_name]
+            rows = sheet.iter_rows(min_row=2, values_only=True)
+            cls_stu = [parse_stu(grade_name, r) for r in rows if is_valid_stu(r, lambda: f'{grade_name} {cls_name}')]
+            grade_stu.extend(cls_stu)
+            yield ClassScore(self.config, grade_name, cls_name, np.array(cls_stu, STU_DTYPE))
+        yield ClassScore(self.config, grade_name, '校平', np.array(grade_stu, STU_DTYPE))
 
     # 计算班级排名
     @staticmethod

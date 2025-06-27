@@ -7,3 +7,4 @@ allure-results*
 *.pptx
 report.html
 assets
+.venv

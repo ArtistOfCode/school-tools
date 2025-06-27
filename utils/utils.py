@@ -1,8 +1,10 @@
 from enum import unique, Enum
 
+GRADE = ('一年级', '二年级', '三年级', '四年级', '五年级', '六年级')
+
 
 def is_grade(grade_name):
-    return grade_name in ('一年级', '二年级', '三年级', '四年级', '五年级', '六年级')
+    return grade_name in GRADE
 
 
 def is_low_grade(grade_name):
@@ -15,11 +17,23 @@ def is_school_class(name):
 
 @unique
 class Subjects(Enum):
-    CHINESE = 'chinese', '语文'
+    CHN = 'chinese', '语文'
     MATH = 'math', '数学'
-    ENGLISH = 'english', '英语'
+    ENG = 'english', '英语'
     TWO = 'two', '总评'
 
     def __init__(self, code, desc):
         self.code = code
         self.desc = desc
+
+    @staticmethod
+    def is_english(sub: 'Subjects'):
+        return sub == Subjects.ENG
+
+    @staticmethod
+    def is_single(sub: 'Subjects'):
+        return sub != Subjects.TWO
+
+    @staticmethod
+    def is_two(sub: 'Subjects'):
+        return sub == Subjects.TWO

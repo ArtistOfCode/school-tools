@@ -41,21 +41,23 @@ class SubjectScore:
         # 班级当前科成绩
         _sub = _stu[self.subject.code]
 
-        if self.subject != Subjects.TWO:
+        _pass_score = self.config.pass_score
+
+        if Subjects.is_single(self.subject):
             # 单科成绩分析
             _mean = _sub.mean()
-            _pass = _stu[_sub >= self.config.pass_score].size
+            _pass = _stu[_sub >= _pass_score].size
             _top = _stu[_sub >= self.config.single_top_score].size
         else:
             # 校平成绩分析
-            _chinese_pass = (_stu[Subjects.CHINESE.code] >= self.config.pass_score)
-            _math_pass = (_stu[Subjects.MATH.code] >= self.config.pass_score)
+            _chn_pass = (_stu[Subjects.CHN.code] >= _pass_score)
+            _math_pass = (_stu[Subjects.MATH.code] >= _pass_score)
             _mean = _sub.mean() / 2
             if class_score.is_low:
-                _pass = _stu[_chinese_pass & _math_pass].size
+                _pass = _stu[_chn_pass & _math_pass].size
             else:
-                _english_pass = (_stu[Subjects.ENGLISH.code] >= self.config.pass_score)
-                _pass = _stu[_chinese_pass & _math_pass & _english_pass].size
+                _eng_pass = (_stu[Subjects.ENG.code] >= _pass_score)
+                _pass = _stu[_chn_pass & _math_pass & _eng_pass].size
             _top = _stu[_sub >= self.config.two_top_score].size
 
         _pass_rate = _pass / _total * 100
@@ -76,7 +78,7 @@ class SubjectScore:
         self.care_stu_array = _care_arr
         # 高年级一类关爱指标计算总评
         if not class_score.is_low:
-            if self.subject == Subjects.ENGLISH:
+            if Subjects.is_english(self.subject):
                 self.total = self.round(_mean * 0.4 + _pass_rate * 0.4 + _care_mean * 0.2)
             else:
                 self.total = self.round(_mean * 0.4 + _pass_rate * 0.3 + _top_rate * 0.2 + _care_mean * 0.1)
@@ -84,7 +86,7 @@ class SubjectScore:
         # 校平分析最后算出关爱分数线
         if class_score.is_school:
             self.care_stu_2 = _sub_arr.max(), _care, self.round((_total - _care) / _total * 100)
-            if class_score.is_low and self.subject != Subjects.ENGLISH:
+            if class_score.is_low and not Subjects.is_english(self.subject):
                 self.total = self.round(_mean * 0.4 + _pass_rate * 0.4 + self.care_stu_2[2] * 0.2)
 
     def analyse_final(self, class_score: 'ClassScore', school_score: 'SubjectScore'):
@@ -98,6 +100,7 @@ class SubjectScore:
         _care_arr = np.sort(_stu[_sub <= _care_score], order=self.subject.code)[::-1]
         _care = _care_arr.size
 
+        # 计算二类关爱指标
         self.care_stu_2 = _care_score, _care, self.round((_total - _care) / _total * 100)
 
         # 低年级使用二类关爱指标，重新赋值关爱学生列表
@@ -122,9 +125,9 @@ class ClassScore:
         self.name = name
         self.array = array
         self.total_stu = array.size
-        self.chinese = SubjectScore(config, Subjects.CHINESE)
+        self.chinese = SubjectScore(config, Subjects.CHN)
         self.math = SubjectScore(config, Subjects.MATH)
-        self.english = SubjectScore(config, Subjects.ENGLISH)
+        self.english = SubjectScore(config, Subjects.ENG)
         self.two = SubjectScore(config, Subjects.TWO)
 
     def analyse1(self):

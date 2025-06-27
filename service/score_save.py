@@ -34,7 +34,7 @@ class ScoreSave:
         for code, desc in [s.value for s in Subjects]:
             logging.debug(f'当前写入科目: {sheet.title} {desc}')
             _low = is_low_grade(sheet.title)
-            if _low and code == Subjects.ENGLISH.code:
+            if _low and code == Subjects.ENG.code:
                 continue
 
             # 定义表头
@@ -65,7 +65,7 @@ class ScoreSave:
                 set_float_cell(_cell(), _sub_score.mean)
                 set_cell(_cell(), _sub_score.pass_stu[0])
                 set_float_cell(_cell(), _sub_score.pass_stu[1])
-                if code != Subjects.ENGLISH.code:
+                if code != Subjects.ENG.code:
                     set_cell(_cell(), _sub_score.top_stu[0])
                     set_float_cell(_cell(), _sub_score.top_stu[1])
                 if is_low_grade:
@@ -87,7 +87,7 @@ class ScoreSave:
         for code, desc in [s.value for s in Subjects]:
             logging.debug(f'当前写入关爱生科目: {sheet.title} {desc}')
             _low = is_low_grade(sheet.title)
-            if _low and code == Subjects.ENGLISH.code:
+            if _low and code == Subjects.ENG.code:
                 continue
 
             _row = CellIndex(0)
@@ -110,12 +110,12 @@ class ScoreSave:
                 if code != Subjects.TWO.code:
                     set_title_cell(_cell(), '分数')
                 else:
-                    set_title_cell(_cell(), Subjects.CHINESE.desc)
+                    set_title_cell(_cell(), Subjects.CHN.desc)
                     set_title_cell(_cell(), Subjects.MATH.desc)
                     if _score.is_low:
                         set_title_cell(_cell(), Subjects.TWO.desc)
                     else:
-                        set_title_cell(_cell(), Subjects.ENGLISH.desc)
+                        set_title_cell(_cell(), Subjects.ENG.desc)
                         set_title_cell(_cell(), Subjects.TWO.desc)
                 _row.next()
 
@@ -127,10 +127,10 @@ class ScoreSave:
                     if code != Subjects.TWO.code:
                         set_cell(_cell(), stu[code])
                     else:
-                        set_cell(_cell(), stu[Subjects.CHINESE.code])
+                        set_cell(_cell(), stu[Subjects.CHN.code])
                         set_cell(_cell(), stu[Subjects.MATH.code])
                         if not _score.is_low:
-                            set_cell(_cell(), stu[Subjects.ENGLISH.code])
+                            set_cell(_cell(), stu[Subjects.ENG.code])
                         set_cell(_cell(), stu[Subjects.TWO.code])
                     _row.next()
                 _row.next()
@@ -146,7 +146,7 @@ class ScoreSave:
         for code, desc in [s.value for s in Subjects]:
             logging.debug(f'当前写入PPT科目: {self.grade} {desc}')
             _low = is_low_grade(self.grade)
-            if _low and code == Subjects.ENGLISH.code:
+            if _low and code == Subjects.ENG.code:
                 continue
 
             # 添加科目标题页
@@ -168,14 +168,14 @@ class ScoreSave:
         # @formatter:off
         if _low:
             care_score = getattr(self.score[0], code).care_stu_2[0]
-            if code in (Subjects.CHINESE.code, Subjects.MATH.code):
+            if code in (Subjects.CHN.code, Subjects.MATH.code):
                 headers = ['班级', '平均分', '及格率', f'关爱率\v{care_score:g}', '总评', '与校\v平差', '与区\v平差', '名次', '教者']
             else:
                 headers = ['班级', '平均分', '及格人数', '及格率', f'关爱率\v{care_score:g}', '总评', '与校\v平差', '与区\v平差', '名次', '班主任']
         else:
-            if code in (Subjects.CHINESE.code, Subjects.MATH.code):
+            if code in (Subjects.CHN.code, Subjects.MATH.code):
                 headers = ['班级', '平均分', '及格率', '关爱\v平均分', '特优率', '总评', '与校\v平差', '与区\v平差', '名次', '教者']
-            elif code == Subjects.ENGLISH.code:
+            elif code == Subjects.ENG.code:
                 headers = ['班级', '平均分', '及格率', f'关爱\v平均分', '总评', '与校\v平差', '与区\v平差', '名次', '教者']
             else:
                 headers = ['班级', '平均分', '三科\v及格人数', f'三科\v及格率', '关爱\v平均分', '总评', '与校\v平差', '与区\v平差', '名次', '班主任']
@@ -200,7 +200,7 @@ class ScoreSave:
             _set_cell = lambda s: set_center_cell(table.cell(idx, col.next()), s)
             set_center_cell(table.cell(idx, col.value), _score.name)
             if _low:
-                if code in (Subjects.CHINESE.code, Subjects.MATH.code):
+                if code in (Subjects.CHN.code, Subjects.MATH.code):
                     _set_cell(to_str(_sub.mean))
                     _set_cell(to_str(_sub.pass_stu[1]))
                     _set_cell(to_str(_sub.care_stu_2[2]))
@@ -210,12 +210,12 @@ class ScoreSave:
                     _set_cell(to_str(_sub.pass_stu[1]))
                     _set_cell(to_str(_sub.care_stu_2[2]))
             else:
-                if code in (Subjects.CHINESE.code, Subjects.MATH.code):
+                if code in (Subjects.CHN.code, Subjects.MATH.code):
                     _set_cell(to_str(_sub.mean))
                     _set_cell(to_str(_sub.pass_stu[1]))
                     _set_cell(to_str(_sub.care_stu_1[1]))
                     _set_cell(to_str(_sub.top_stu[1]))
-                elif code == Subjects.ENGLISH.code:
+                elif code == Subjects.ENG.code:
                     _set_cell(to_str(_sub.mean))
                     _set_cell(to_str(_sub.pass_stu[1]))
                     _set_cell(to_str(_sub.care_stu_1[1]))
@@ -279,9 +279,9 @@ class ScoreSave:
                 add_textbox(slide, _pos, f'{desc}关爱分数线：{round(care_score, 2):g}')
 
                 if _low:
-                    headers = ['姓名', Subjects.CHINESE.desc, Subjects.MATH.desc, Subjects.TWO.desc]
+                    headers = ['姓名', Subjects.CHN.desc, Subjects.MATH.desc, Subjects.TWO.desc]
                 else:
-                    headers = ['姓名', Subjects.CHINESE.desc, Subjects.MATH.desc, Subjects.ENGLISH.desc,
+                    headers = ['姓名', Subjects.CHN.desc, Subjects.MATH.desc, Subjects.ENG.desc,
                                Subjects.TWO.desc]
 
                 w, h = 5, 1.2
@@ -299,10 +299,10 @@ class ScoreSave:
                 for stu in _sub.care_stu_array:
                     col = CellIndex(0)
                     set_center_cell(table.cell(row.value, col.value), stu['name'], size=_size)
-                    set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.CHINESE.code]:g}', size=_size)
+                    set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.CHN.code]:g}', size=_size)
                     set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.MATH.code]:g}', size=_size)
                     if not _low:
-                        set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.ENGLISH.code]:g}',
+                        set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.ENG.code]:g}',
                                         size=_size)
                     set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.TWO.code]:g}', size=_size)
                     row.next()
