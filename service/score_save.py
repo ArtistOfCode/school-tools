@@ -34,12 +34,12 @@ class ScoreSave:
         for code, desc in [s.value for s in Subjects]:
             logging.debug(f'当前写入科目: {sheet.title} {desc}')
             _low = is_low_grade(sheet.title)
-            if _low and Subjects.is_english(code):
+            if _low and code == Subjects.ENG.code:
                 continue
 
             # 定义表头
             care_score = getattr(self.score[0], code).care_stu_2[0]
-            pass_name = '三科' if (not _low and Subjects.is_two(code)) else ''
+            pass_name = '三科' if (not _low and code == Subjects.TWO.code) else ''
             care_name = f'率({care_score:g})' if _low else '平均分'
             headers = ['班级', '总人数', '平均分', f'{pass_name}及格人数', f'{pass_name}及格率', '特优人数', '特优率',
                        f'关爱{care_name}', '总评', '与校平差', '名次']
@@ -65,7 +65,7 @@ class ScoreSave:
                 set_float_cell(_cell(), _sub_score.mean)
                 set_cell(_cell(), _sub_score.pass_stu[0])
                 set_float_cell(_cell(), _sub_score.pass_stu[1])
-                if Subjects.is_english(code):
+                if code == Subjects.ENG.code:
                     _idx.next(2)
                 else:
                     set_cell(_cell(), _sub_score.top_stu[0])
@@ -248,39 +248,48 @@ class ScoreSave:
                 _pos = pos(3, 0.5, self.ppt.slide_height.inches - 1, 1)
                 add_textbox(slide, _pos, f'{desc}关爱分数线：{round(care_score, 2):g}')
 
-                for i, _score in enumerate(self.score[:-1]):
-                    _sub: SubjectScore = getattr(_score, code)
+            for i, _score in enumerate(self.score[:-1]):
+                _sub: SubjectScore = getattr(_score, code)
+                if _low:
                     _, care, _ = _sub.care_stu_2
+                else:
+                    care, _ = _sub.care_stu_1
 
-                    l = 2 if i == 0 else i * 5 + 2
-                    table = add_table(slide, (care + 2, 2), pos_cm(2.2, 0.9, 3.5, l))
+                l = 2 if i == 0 else i * 5 + 2
+                table = add_table(slide, (care + 2, 2), pos_cm(2.2, 0.9, 3.5, l))
 
-                    row = CellIndex(0)
-                    header = table.cell(row.value, 0)
-                    header.merge(table.cell(row.value, 1))
+                row = CellIndex(0)
+                header = table.cell(row.value, 0)
+                header.merge(table.cell(row.value, 1))
 
-                    _size = 14
-                    set_center_cell(header, f'{_score.name}班（{care}）', size=_size)
+                _size = 14
+                set_center_cell(header, f'{_score.name}班（{care}）', size=_size)
+                row.next()
+                set_center_cell(table.cell(row.value, 0), '姓名', bold=True, size=_size)
+                set_center_cell(table.cell(row.value, 1), '分数', bold=True, size=_size)
+                row.next()
+
+                for stu in _sub.care_stu_array:
+                    set_center_cell(table.cell(row.value, 0), stu['name'], size=_size)
+                    set_center_cell(table.cell(row.value, 1), f'{stu[code]:g}', size=_size)
                     row.next()
-                    set_center_cell(table.cell(row.value, 0), '姓名', bold=True, size=_size)
-                    set_center_cell(table.cell(row.value, 1), '分数', bold=True, size=_size)
-                    row.next()
-
-                    for stu in _sub.care_stu_array:
-                        set_center_cell(table.cell(row.value, 0), stu['name'], size=_size)
-                        set_center_cell(table.cell(row.value, 1), f'{stu[code]:g}', size=_size)
-                        row.next()
         else:
             for i, _score in enumerate(self.score[:-1]):
                 slide = add_layout_slide(self.ppt, 3, f'{desc}关爱生')
 
                 _sub = getattr(_score, code)
-                care_score, care, _ = _sub.care_stu_2
-                _pos = pos(2, 0.5, 1.2, 0.8)
-                add_textbox(slide, _pos, f'{_score.name}班：{care}个')
 
-                _pos = pos(3, 0.5, self.ppt.slide_height.inches - 1, 1)
-                add_textbox(slide, _pos, f'{desc}关爱分数线：{round(care_score, 2):g}')
+                if _low:
+                    care_score, care, _ = _sub.care_stu_2
+                    _pos = pos(2, 0.5, 1.2, 0.8)
+                    add_textbox(slide, _pos, f'{_score.name}班：{care}个')
+
+                    _pos = pos(3, 0.5, self.ppt.slide_height.inches - 1, 1)
+                    add_textbox(slide, _pos, f'{desc}关爱分数线：{round(care_score, 2):g}')
+                else:
+                    care, _ = _sub.care_stu_1
+                    _pos = pos(2, 0.5, 1.2, 0.8)
+                    add_textbox(slide, _pos, f'{_score.name}班：{care}个')
 
                 if _low:
                     headers = ['姓名', Subjects.CHN.desc, Subjects.MATH.desc, Subjects.TWO.desc]

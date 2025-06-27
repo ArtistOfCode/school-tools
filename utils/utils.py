@@ -27,13 +27,13 @@ class Subjects(Enum):
         self.desc = desc
 
     @staticmethod
-    def is_english(sub):
-        return sub == Subjects.ENG or sub == Subjects.ENG.code
+    def is_english(sub: 'Subjects'):
+        return sub == Subjects.ENG
 
     @staticmethod
-    def is_single(sub):
-        return sub != Subjects.TWO or sub != Subjects.TWO.code
+    def is_single(sub: 'Subjects'):
+        return sub != Subjects.TWO
 
     @staticmethod
-    def is_two(sub):
-        return sub == Subjects.TWO or sub == Subjects.TWO.code
+    def is_two(sub: 'Subjects'):
+        return sub == Subjects.TWO
