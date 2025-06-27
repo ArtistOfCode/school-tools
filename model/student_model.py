@@ -24,7 +24,7 @@ def parse_stu(grade_name, row):
 
     eng = eng[0] if eng else 0
 
-    logging.debug(f'加载学生成绩: {grade_name:<5s}{cls_name:<6d}{name:<5s}\t{chn:<.2f}\t{math:<.2f}\t{eng:<.2f}')
+    # logging.debug(f'加载学生成绩: {grade_name:<5s}{cls_name:<6d}{name:<5s}\t{chn:<.2f}\t{math:<.2f}\t{eng:<.2f}')
     return grade_name, str(cls_name), name, float(chn), float(math), float(eng), float(chn) + float(math)
 
 

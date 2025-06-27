@@ -34,12 +34,12 @@ class ScoreSave:
         for code, desc in [s.value for s in Subjects]:
             logging.debug(f'当前写入科目: {sheet.title} {desc}')
             _low = is_low_grade(sheet.title)
-            if _low and code == Subjects.ENG.code:
+            if _low and Subjects.is_english(code):
                 continue
 
             # 定义表头
             care_score = getattr(self.score[0], code).care_stu_2[0]
-            pass_name = '三科' if (not _low and code == Subjects.TWO.code) else ''
+            pass_name = '三科' if (not _low and Subjects.is_two(code)) else ''
             care_name = f'率({care_score:g})' if _low else '平均分'
             headers = ['班级', '总人数', '平均分', f'{pass_name}及格人数', f'{pass_name}及格率', '特优人数', '特优率',
                        f'关爱{care_name}', '总评', '与校平差', '名次']
@@ -65,12 +65,16 @@ class ScoreSave:
                 set_float_cell(_cell(), _sub_score.mean)
                 set_cell(_cell(), _sub_score.pass_stu[0])
                 set_float_cell(_cell(), _sub_score.pass_stu[1])
-                if code != Subjects.ENG.code:
+                if Subjects.is_english(code):
+                    _idx.next(2)
+                else:
                     set_cell(_cell(), _sub_score.top_stu[0])
                     set_float_cell(_cell(), _sub_score.top_stu[1])
-                if is_low_grade:
+                if _low:
+                    # 低年级使用二类关爱指标
                     set_float_cell(_cell(), _sub_score.care_stu_2[2])
                 else:
+                    # 高年级使用一类关爱指标
                     set_float_cell(_cell(), _sub_score.care_stu_1[1])
                 set_float_cell(_cell(), _sub_score.total)
                 if not _score.is_school:

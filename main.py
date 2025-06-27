@@ -14,5 +14,5 @@ if __name__ == '__main__':
     logging.debug(f'项目根目录: {ROOT_DIR}')
     config = Config(ROOT_DIR)
     config.need_care = True
-    config.need_ppt = False
+    config.need_ppt = True
     ScoreAnalyseService(config).school_analyse()
