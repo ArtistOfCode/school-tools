@@ -7,6 +7,11 @@ def is_grade(grade_name):
     return grade_name in GRADE
 
 
+def is_like_grade(file_name):
+    n = [grade for grade in GRADE if grade in file_name]
+    return n[0] if n else None
+
+
 def is_low_grade(grade_name):
     return grade_name in ('一年级', '二年级')
 

@@ -30,7 +30,7 @@ def parse_stu(grade_name, row):
 
 def is_valid_stu(row, name):
     _, _, _, *score = row
-    if not all(score) or not all([type(s) in (int, float) for s in score]):
+    if not all([type(s) in (int, float) for s in score]):
         logging.warning(f'该学生成绩忽略: {name()} {row}')
         return False
     return True

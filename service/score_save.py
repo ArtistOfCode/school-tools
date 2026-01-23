@@ -23,7 +23,7 @@ class ScoreSave:
         self.excel.remove(self.excel['Sheet'])
         self.ppt = Presentation(self.config.ppt_template_path) if self.config.need_ppt else None
 
-    def add_excel_sheet(self, grade, score: ClassScore):
+    def add_excel_sheet(self, grade, score: List[ClassScore]):
         self.grade = grade
         self.score = score
         return self.excel.create_sheet(self.grade)

@@ -1,7 +1,6 @@
 from pptx.dml.color import RGBColor
 from pptx.enum.text import MSO_VERTICAL_ANCHOR, PP_ALIGN
 from pptx.slide import Slide
-from pptx.table import _Cell
 from pptx.util import Inches, Cm, Pt
 
 
@@ -28,7 +27,7 @@ def add_textbox(slide: Slide, position, text):
     slide.shapes.add_textbox(l, t, w, h).text_frame.text = text
 
 
-def set_center_cell(cell: _Cell, value: str, color='000000', bold=None, size=18):
+def set_center_cell(cell, value: str, color='000000', bold=None, size=18):
     cell.text = value
     cell.vertical_anchor = MSO_VERTICAL_ANCHOR.MIDDLE
     cell.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
