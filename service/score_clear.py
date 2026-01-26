@@ -7,8 +7,8 @@ from openpyxl.styles import Font, Border, PatternFill, Alignment, Protection
 from openpyxl.worksheet.worksheet import Worksheet
 
 from model.config_model import Config
-from utils.utils import is_like_grade
 
+grade_match = re.compile(r'([一二三四五六])年级')
 header_match = re.compile(r'(姓名|语文|数学|英语)')
 
 
@@ -25,14 +25,13 @@ class ScoreClearService:
 
     def rename_file(self):
         for file in self.config.data_path.glob('*.xlsx'):
-            if n2 := is_like_grade(n1 := file.stem):
-                if n1 == n2:
-                    logging.info(f'原文件名称合法，跳过：{n1}')
-                    continue
+            match = grade_match.search(n1 := file.stem)
+            if not match:
+                logging.error(f'文件名称不合法: {n1}')
+                continue
+            if n1 != (n2 := match.group()):
                 file.rename(file.parent / f'{n2}.xlsx')
-                logging.info(f'原文件名称不合法，修改为：{n1} -> {n2}')
-            else:
-                logging.error(f'原文件名称不合法: {n1}')
+                logging.info(f'文件名称不合法，修改为：{n1} -> {n2}')
 
     def clear_file(self, greade: str, file: Path):
         wb = load_workbook(file, False, False, True)
@@ -63,9 +62,9 @@ class ScoreClearService:
 
     @staticmethod
     def pre_handle(sheet: Worksheet):
+        # 清除图片
         sheet._images = []
-        if not sheet.merged_cells.ranges:
-            return
+        # 清除合并单元格
         for merged_range in list(sheet.merged_cells.ranges):
             sheet.unmerge_cells(str(merged_range))
 
