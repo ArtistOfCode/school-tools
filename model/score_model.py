@@ -8,7 +8,6 @@ from utils.utils import is_low_grade, is_school_class, Subjects
 
 
 class SubjectScore:
-
     def __init__(self, config: Config, subject: Subjects):
         # 科目
         self.subject = subject
@@ -50,13 +49,13 @@ class SubjectScore:
             _top = _stu[_sub >= self.config.single_top_score].size
         else:
             # 校平成绩分析
-            _chn_pass = (_stu[Subjects.CHN.code] >= _pass_score)
-            _math_pass = (_stu[Subjects.MATH.code] >= _pass_score)
+            _chn_pass = _stu[Subjects.CHN.code] >= _pass_score
+            _math_pass = _stu[Subjects.MATH.code] >= _pass_score
             _mean = _sub.mean() / 2
             if class_score.is_low:
                 _pass = _stu[_chn_pass & _math_pass].size
             else:
-                _eng_pass = (_stu[Subjects.ENG.code] >= _pass_score)
+                _eng_pass = _stu[Subjects.ENG.code] >= _pass_score
                 _pass = _stu[_chn_pass & _math_pass & _eng_pass].size
             _top = _stu[_sub >= self.config.two_top_score].size
 
@@ -81,11 +80,13 @@ class SubjectScore:
             if Subjects.is_english(self.subject):
                 self.total = self.round(_mean * 0.4 + _pass_rate * 0.4 + _care_mean * 0.2)
             else:
-                self.total = self.round(_mean * 0.4 + _pass_rate * 0.3 + _top_rate * 0.2 + _care_mean * 0.1)
+                self.total = self.round(
+                    _mean * 0.4 + _pass_rate * 0.3 + _top_rate * 0.2 + _care_mean * 0.1
+                )
 
         # 校平分析最后算出关爱分数线
         if class_score.is_school:
-            self.care_stu_2 = _sub_arr.max(), _care, self.round((_total - _care) / _total * 100)
+            self.care_stu_2 = (_sub_arr.max(), _care, self.round((_total - _care) / _total * 100))
             if class_score.is_low and not Subjects.is_english(self.subject):
                 self.total = self.round(_mean * 0.4 + _pass_rate * 0.4 + self.care_stu_2[2] * 0.2)
 
@@ -101,13 +102,15 @@ class SubjectScore:
         _care = _care_arr.size
 
         # 计算二类关爱指标
-        self.care_stu_2 = _care_score, _care, self.round((_total - _care) / _total * 100)
+        self.care_stu_2 = (_care_score, _care, self.round((_total - _care) / _total * 100))
 
         # 低年级使用二类关爱指标，重新赋值关爱学生列表
         if class_score.is_low:
             self.care_stu_array = _care_arr
             # 计算总评
-            self.total = self.round(self.mean * 0.4 + self.pass_stu[1] * 0.4 + self.care_stu_2[2] * 0.2)
+            self.total = self.round(
+                self.mean * 0.4 + self.pass_stu[1] * 0.4 + self.care_stu_2[2] * 0.2
+            )
 
         # 计算与校平差和名次
         self.diff = self.round(self.total - school_score.total)
@@ -118,7 +121,6 @@ class SubjectScore:
 
 
 class ClassScore:
-
     def __init__(self, config: Config, grade_name: str, name: str, array: ndarray):
         # 年级名称 班级名称 总人数 语文成绩 数学成绩 英语成绩 总评成绩
         self.grade_name = grade_name

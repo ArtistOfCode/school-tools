@@ -5,7 +5,6 @@ from utils.utils import is_grade, GRADE
 
 
 class Config:
-
     def __init__(self, root_dir):
         self.root_dir = Path(root_dir)
         # 及格分数

@@ -13,7 +13,6 @@ header_match = re.compile(r'(姓名|语文|数学|英语)')
 
 
 class ScoreClearService:
-
     def __init__(self, config: Config):
         self.config = config
 
@@ -114,8 +113,10 @@ class ScoreClearService:
 
     @staticmethod
     def clear_all_styles(sheet):
-        if sheet.auto_filter.ref: sheet.auto_filter.ref = None
-        if sheet.freeze_panes: sheet.freeze_panes = None
+        if sheet.auto_filter.ref:
+            sheet.auto_filter.ref = None
+        if sheet.freeze_panes:
+            sheet.freeze_panes = None
         sheet.freeze_panes = 'A2'
         sheet.row_dimensions.clear()
         sheet.column_dimensions.clear()
@@ -127,6 +128,6 @@ class ScoreClearService:
                 cell.fill = PatternFill()
                 cell.alignment = Alignment()
                 cell.protection = Protection()
-                cell.number_format = "General"
+                cell.number_format = 'General'
                 cell.comment = None
                 cell.hyperlink = None

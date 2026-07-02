@@ -6,7 +6,7 @@ from service.score_analyse import ScoreAnalyseService
 
 ROOT_DIR = dirname(abspath(__file__))
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 logging.basicConfig(format='%(asctime)s %(levelname)7s: %(message)s')
 
 if __name__ == '__main__':

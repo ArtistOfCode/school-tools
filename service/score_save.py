@@ -14,7 +14,6 @@ from utils.utils import Subjects, is_school_class, is_low_grade
 
 
 class ScoreSave:
-
     def __init__(self, config: Config):
         self.config = config
         self.grade = None
@@ -41,8 +40,19 @@ class ScoreSave:
             care_score = getattr(self.score[0], code).care_stu_2[0]
             pass_name = '三科' if (not _low and code == Subjects.TWO.code) else ''
             care_name = f'率({care_score:g})' if _low else '平均分'
-            headers = ['班级', '总人数', '平均分', f'{pass_name}及格人数', f'{pass_name}及格率', '特优人数', '特优率',
-                       f'关爱{care_name}', '总评', '与校平差', '名次']
+            headers = [
+                '班级',
+                '总人数',
+                '平均分',
+                f'{pass_name}及格人数',
+                f'{pass_name}及格率',
+                '特优人数',
+                '特优率',
+                f'关爱{care_name}',
+                '总评',
+                '与校平差',
+                '名次',
+            ]
 
             # 写入科目名称
             set_title_cell(sheet.cell(row.value, 1), desc)
@@ -58,7 +68,9 @@ class ScoreSave:
                 logging.debug(f'当前写入班级: {sheet.title} {desc} {_score.name}')
                 _sub_score: SubjectScore = getattr(_score, code)
                 _idx = CellIndex(0)
-                _cell = lambda: sheet.cell(row.value, _idx.next())
+
+                def _cell():
+                    return sheet.cell(row.value, _idx.next())
 
                 set_cell(_cell(), _score.name)
                 set_cell(_cell(), _score.total_stu)
@@ -106,11 +118,15 @@ class ScoreSave:
                 _col = CellIndex(col.value)
 
                 # 写入表头
-                set_title_cell(sheet.cell(_row.next(), _col.value),
-                               f'{_score.name}班{desc}（{_sub_score.care_stu_array.size}）')
+                set_title_cell(
+                    sheet.cell(_row.next(), _col.value),
+                    f'{_score.name}班{desc}（{_sub_score.care_stu_array.size}）',
+                )
                 set_title_cell(sheet.cell(_row.next(), _col.value), '姓名')
 
-                _cell = lambda: sheet.cell(_row.value, _col.next())
+                def _cell():
+                    return sheet.cell(_row.value, _col.next())
+
                 if code != Subjects.TWO.code:
                     set_title_cell(_cell(), '分数')
                 else:
@@ -169,28 +185,80 @@ class ScoreSave:
 
     def __add_pptx_table(self, _low, code, slide: Slide):
         # 计算成绩表格表头
-        # @formatter:off
         if _low:
             care_score = getattr(self.score[0], code).care_stu_2[0]
             if code in (Subjects.CHN.code, Subjects.MATH.code):
-                headers = ['班级', '平均分', '及格率', f'关爱率\v{care_score:g}', '总评', '与校\v平差', '与区\v平差', '名次', '教者']
+                headers = [
+                    '班级',
+                    '平均分',
+                    '及格率',
+                    f'关爱率\v{care_score:g}',
+                    '总评',
+                    '与校\v平差',
+                    '与区\v平差',
+                    '名次',
+                    '教者',
+                ]
             else:
-                headers = ['班级', '平均分', '及格人数', '及格率', f'关爱率\v{care_score:g}', '总评', '与校\v平差', '与区\v平差', '名次', '班主任']
+                headers = [
+                    '班级',
+                    '平均分',
+                    '及格人数',
+                    '及格率',
+                    f'关爱率\v{care_score:g}',
+                    '总评',
+                    '与校\v平差',
+                    '与区\v平差',
+                    '名次',
+                    '班主任',
+                ]
         else:
             if code in (Subjects.CHN.code, Subjects.MATH.code):
-                headers = ['班级', '平均分', '及格率', '关爱\v平均分', '特优率', '总评', '与校\v平差', '与区\v平差', '名次', '教者']
+                headers = [
+                    '班级',
+                    '平均分',
+                    '及格率',
+                    '关爱\v平均分',
+                    '特优率',
+                    '总评',
+                    '与校\v平差',
+                    '与区\v平差',
+                    '名次',
+                    '教者',
+                ]
             elif code == Subjects.ENG.code:
-                headers = ['班级', '平均分', '及格率', f'关爱\v平均分', '总评', '与校\v平差', '与区\v平差', '名次', '教者']
+                headers = [
+                    '班级',
+                    '平均分',
+                    '及格率',
+                    '关爱\v平均分',
+                    '总评',
+                    '与校\v平差',
+                    '与区\v平差',
+                    '名次',
+                    '教者',
+                ]
             else:
-                headers = ['班级', '平均分', '三科\v及格人数', f'三科\v及格率', '关爱\v平均分', '总评', '与校\v平差', '与区\v平差', '名次', '班主任']
+                headers = [
+                    '班级',
+                    '平均分',
+                    '三科\v及格人数',
+                    '三科\v及格率',
+                    '关爱\v平均分',
+                    '总评',
+                    '与校\v平差',
+                    '与区\v平差',
+                    '名次',
+                    '班主任',
+                ]
         # @formatter:on
 
         # 成绩表格排版
         w, h = 1.2, 0.5
         r, c = len(self.score) + 2, len(headers)
         t = (self.ppt.slide_height.inches - r * h) / 2
-        l = (self.ppt.slide_width.inches - c * w) / 2
-        table = add_table(slide, (r, c), pos(w, h, t, l))
+        L = (self.ppt.slide_width.inches - c * w) / 2
+        table = add_table(slide, (r, c), pos(w, h, t, L))
 
         for idx, header in enumerate(headers):
             set_center_cell(table.cell(0, idx), header)
@@ -201,7 +269,9 @@ class ScoreSave:
             idx += 1
             col = CellIndex(0)
 
-            _set_cell = lambda s: set_center_cell(table.cell(idx, col.next()), s)
+            def _set_cell(s):
+                return set_center_cell(table.cell(idx, col.next()), s)
+
             set_center_cell(table.cell(idx, col.value), _score.name)
             if _low:
                 if code in (Subjects.CHN.code, Subjects.MATH.code):
@@ -255,8 +325,8 @@ class ScoreSave:
                 else:
                     care, _ = _sub.care_stu_1
 
-                l = 2 if i == 0 else i * 5 + 2
-                table = add_table(slide, (care + 2, 2), pos_cm(2.2, 0.9, 3.5, l))
+                L = 2 if i == 0 else i * 5 + 2
+                table = add_table(slide, (care + 2, 2), pos_cm(2.2, 0.9, 3.5, L))
 
                 row = CellIndex(0)
                 header = table.cell(row.value, 0)
@@ -292,16 +362,26 @@ class ScoreSave:
                     add_textbox(slide, _pos, f'{_score.name}班：{care}个')
 
                 if _low:
-                    headers = ['姓名', Subjects.CHN.desc, Subjects.MATH.desc, Subjects.TWO.desc]
+                    headers = [
+                        '姓名',
+                        Subjects.CHN.desc,
+                        Subjects.MATH.desc,
+                        Subjects.TWO.desc,
+                    ]
                 else:
-                    headers = ['姓名', Subjects.CHN.desc, Subjects.MATH.desc, Subjects.ENG.desc,
-                               Subjects.TWO.desc]
+                    headers = [
+                        '姓名',
+                        Subjects.CHN.desc,
+                        Subjects.MATH.desc,
+                        Subjects.ENG.desc,
+                        Subjects.TWO.desc,
+                    ]
 
                 w, h = 5, 1.2
                 r, c = care + 1, len(headers)
                 t = (self.ppt.slide_height.cm - r * h) / 2
-                l = (self.ppt.slide_width.cm - c * w) / 2
-                table = add_table(slide, (r, c), pos_cm(w, h, t, l))
+                L = (self.ppt.slide_width.cm - c * w) / 2
+                table = add_table(slide, (r, c), pos_cm(w, h, t, L))
 
                 _size = 14
                 row = CellIndex(0)
@@ -312,12 +392,27 @@ class ScoreSave:
                 for stu in _sub.care_stu_array:
                     col = CellIndex(0)
                     set_center_cell(table.cell(row.value, col.value), stu['name'], size=_size)
-                    set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.CHN.code]:g}', size=_size)
-                    set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.MATH.code]:g}', size=_size)
+                    set_center_cell(
+                        table.cell(row.value, col.next()),
+                        f'{stu[Subjects.CHN.code]:g}',
+                        size=_size,
+                    )
+                    set_center_cell(
+                        table.cell(row.value, col.next()),
+                        f'{stu[Subjects.MATH.code]:g}',
+                        size=_size,
+                    )
                     if not _low:
-                        set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.ENG.code]:g}',
-                                        size=_size)
-                    set_center_cell(table.cell(row.value, col.next()), f'{stu[Subjects.TWO.code]:g}', size=_size)
+                        set_center_cell(
+                            table.cell(row.value, col.next()),
+                            f'{stu[Subjects.ENG.code]:g}',
+                            size=_size,
+                        )
+                    set_center_cell(
+                        table.cell(row.value, col.next()),
+                        f'{stu[Subjects.TWO.code]:g}',
+                        size=_size,
+                    )
                     row.next()
 
 

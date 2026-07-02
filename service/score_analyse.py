@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 import numpy as np
 from openpyxl import load_workbook
@@ -12,7 +13,6 @@ from utils.utils import Subjects
 
 
 class ScoreAnalyseService:
-
     def __init__(self, config: Config):
         self.config = config
 
@@ -39,7 +39,7 @@ class ScoreAnalyseService:
 
     # 年级分析
     def grade_analyse(self, grade_name, workbook: Workbook):
-        school_score = []
+        school_score: List[ClassScore] = []
         # 第一遍循环分析：基本指标、一类关爱指标
         for class_score in self.class_analyse(grade_name, workbook):
             class_score.analyse1()
@@ -57,7 +57,11 @@ class ScoreAnalyseService:
         for cls_name in workbook.sheetnames:
             sheet = workbook[cls_name]
             rows = sheet.iter_rows(min_row=2, values_only=True)
-            cls_stu = [parse_stu(grade_name, r) for r in rows if is_valid_stu(r, lambda: f'{grade_name} {cls_name}')]
+            cls_stu = [
+                parse_stu(grade_name, r)
+                for r in rows
+                if is_valid_stu(r, lambda: f'{grade_name} {cls_name}')
+            ]
             grade_stu.extend(cls_stu)
             yield ClassScore(self.config, grade_name, cls_name, np.array(cls_stu, STU_DTYPE))
         yield ClassScore(self.config, grade_name, '校平', np.array(grade_stu, STU_DTYPE))

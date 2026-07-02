@@ -23,8 +23,8 @@ def add_table(slide: Slide, size, position):
 
 
 def add_textbox(slide: Slide, position, text):
-    w, h, t, l = position
-    slide.shapes.add_textbox(l, t, w, h).text_frame.text = text
+    w, h, t, L = position
+    slide.shapes.add_textbox(L, t, w, h).text_frame.text = text
 
 
 def set_center_cell(cell, value: str, color='000000', bold=None, size=18):
